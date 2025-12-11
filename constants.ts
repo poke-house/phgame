@@ -7,7 +7,9 @@ export const PA_EMOJIS = { MALE: ["👨", "🧔🏻", "👨🏿", "👨🏿‍�
 export const FINAL_CUSTOM_PHRASES = ["Uau! Ficou linda sua bowl!", "Bom apetite!", "Prontinho! Experimente um dos nosso sumos.", "Seu rosto é famíliar, já é nosso cliente né?", "Muito obrigado, volte mais vezes!"];
 
 export const CHANGELOG = [
-    { version: "4.23", date: "Atual", changes: ["Correção da animação da salada na Home Desktop.", "Textos e cores do 'Crie sua Bowl' atualizados.", "Estilo dos botões de oferta de Sésamo atualizado.", "Receita do Cozy Chicken corrigida."] },
+    { version: "4.25", date: "Atual", changes: ["Cor do título 'Molho' no modo Crie sua Bowl atualizada para laranja.", "Mensagem final do Crie sua Bowl simplificada (sem emoji, texto fixo)."] },
+    { version: "4.24", date: "Anterior", changes: ["Removido o molho 'Soja e Sésamo' da lista de ingredientes."] },
+    { version: "4.23", date: "Anterior", changes: ["Correção da animação da salada na Home Desktop.", "Textos e cores do 'Crie sua Bowl' atualizados.", "Estilo dos botões de oferta de Sésamo atualizado.", "Receita do Cozy Chicken corrigida."] },
     { version: "4.22", date: "Anterior", changes: ["Receita do Cozy Chicken atualizada.", "Animações na Sidebar e Home.", "Ajuste de preços e textos no 'Crie sua Bowl'."] },
     { version: "4.21", date: "Anterior", changes: ["Estilização minimalista dos botões de navegação no 'Crie sua Bowl'."] },
     { version: "4.20", date: "Anterior", changes: ["Categorização dos Greens no 'Crie sua Bowl'.", "Lógica de preços para itens Premium e Extras."] },
@@ -28,7 +30,7 @@ export const INGREDIENTS_DB: IngredientDB = {
     sauces_base: ["Azeite", "Azeite de Limão", "Vinagrete", "Ponzu", "Sriracha Mayo", "Não leva"],
     greens: ["Batata Doce com Alecrim", "Brócolis", "Pickle Cebola", "Beterraba", "Cenoura c/ Soja", "Milho", "Abacaxi", "Edamame", "Tomate Cherry", "Couve roxa", "Courgette", "Cenoura", "Grana Padano", "Pepino", "Feta", "Jalapeños", "Azeitonas", "Abacate", "Philadelphia", "Wakame", "Manga", "Hummus"],
     proteins: ["Salmão Braseado", "Filé de Salmão", "Frango Vietnamita", "Camarão Panado", "Frango", "Frango Teriyaki", "Camarão", "Juicy Salmon", "Juicy Tuna", "Salmão", "Atum", "Tofu Grelhado", "Ovo", "Não leva", "Wakame"],
-    sauces_final: ["Creamy Caesar", "Creme de Abacate", "Spicy Peanuts", "Mel", "Chipotle", "Sésamo Shoyu", "Sriracha Mayo", "Wasabi Mayo", "Azeite", "Azeite de Limão", "Manjericão e Hortelã", "Vinagrete", "Soja", "Teriyaki", "Ponzu", "Especial", "Soja e Sésamo"],
+    sauces_final: ["Creamy Caesar", "Creme de Abacate", "Spicy Peanuts", "Mel", "Chipotle", "Sésamo Shoyu", "Sriracha Mayo", "Wasabi Mayo", "Azeite", "Azeite de Limão", "Manjericão e Hortelã", "Vinagrete", "Soja", "Teriyaki", "Ponzu", "Especial"],
     crispies: ["Cebola frita", "Ervilhas Wasabi", "Algas Nori", "Amêndoa", "Batata Doce", "Lima", "Bacon", "Croutons", "Batata Doce Crocante", "Não leva", "Cebola Crocante"],
     sesame: ["Sim", "Não"],
     smoothie_liquid: ["Leite de Coco", "Leite", "Suco de Maçã"],

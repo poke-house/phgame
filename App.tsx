@@ -338,6 +338,12 @@ function App() {
         else if (customPhase === 10) setCustomPhase(9); 
     };
 
+    const finishCustomBowl = () => {
+        const phrase = FINAL_CUSTOM_PHRASES[Math.floor(Math.random() * FINAL_CUSTOM_PHRASES.length)];
+        setResultMessage(phrase);
+        setCustomPhase(10);
+    };
+
     const handleCustomSelection = (item: string, type: string) => { 
         const popupTrigger = (msg: string) => setShowPopup({ msg, callback: () => { setShowPopup(null); addCustomItem(item, type); } }); 
         const size = (allSelections['size'] as string) || "Regular";
@@ -494,7 +500,7 @@ function App() {
                     {count > 0 && <div className="absolute top-0 right-0 bg-brand-blue text-white w-8 h-8 flex items-center justify-center font-bold text-lg shadow-sm">{count}</div>}
                 </button>
             )})}</div></div> ); }
-            case 7: return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-yellow-50 text-pastel-yellow-text" text="Escolha 1 molho, por favor:" isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{INGREDIENTS_DB.sauces_final.map(ing => {
+            case 7: return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-yellow-50 text-[#F57F17]" text="Escolha 1 molho, por favor:" isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{INGREDIENTS_DB.sauces_final.map(ing => {
                 const count = currentSelections.filter(i => i === ing).length;
                 return (
                 <button key={ing} onClick={() => handleCustomSelection(ing, 'sauce')} className={`relative p-4 rounded-win shadow-sm font-medium text-left btn-transition ${currentSelections.includes(ing) ? 'bg-pastel-yellow-100 text-pastel-yellow-text' : 'bg-white text-gray-700 hover:bg-pastel-yellow-50 hover:text-pastel-yellow-text'}`}>
@@ -510,8 +516,8 @@ function App() {
                     {count > 0 && <div className="absolute top-0 right-0 bg-brand-blue text-white w-8 h-8 flex items-center justify-center font-bold text-lg shadow-sm">{count}</div>}
                 </button>
             )})}</div></div> );
-            case 9: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in"><MessageBubble className="bg-pastel-blue-50 text-pastel-blue-text" text="Aceita sésamo de oferta?" /><div className="flex gap-4"><button onClick={() => setCustomPhase(10)} className="bg-white text-pastel-blue-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-blue-50 btn-transition">Sim</button><button onClick={() => setCustomPhase(10)} className="bg-white text-pastel-pink-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-pink-50 btn-transition">Não</button></div></div> );
-            case 10: const finalPhrase = FINAL_CUSTOM_PHRASES[Math.floor(Math.random() * FINAL_CUSTOM_PHRASES.length)]; return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-slide-up"><div className="text-6xl">🎉</div><h2 className="text-3xl font-bold text-brand-blue">{finalPhrase}</h2><button onClick={resetToHome} className="bg-brand-pink text-white px-8 py-3 rounded-win font-bold shadow-fluent hover:bg-pink-600 transition-all flex items-center justify-center gap-2 w-full max-w-xs"><IconHome /> Voltar ao Início</button></div> );
+            case 9: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in"><MessageBubble className="bg-pastel-blue-50 text-pastel-blue-text" text="Aceita sésamo de oferta?" /><div className="flex gap-4"><button onClick={finishCustomBowl} className="bg-white text-pastel-blue-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-blue-50 btn-transition">Sim</button><button onClick={finishCustomBowl} className="bg-white text-pastel-pink-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-pink-50 btn-transition">Não</button></div></div> );
+            case 10: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-slide-up"><h2 className="text-3xl font-bold text-brand-blue">{resultMessage}</h2><button onClick={resetToHome} className="bg-brand-pink text-white px-8 py-3 rounded-win font-bold shadow-fluent hover:bg-pink-600 transition-all flex items-center justify-center gap-2 w-full max-w-xs"><IconHome /> Voltar ao Início</button></div> );
             default: return null;
         }
     };
@@ -608,7 +614,7 @@ function App() {
             </div>
             
             <div className="fixed bottom-1 right-1 z-50 opacity-50 hover:opacity-100 transition-opacity">
-                <button onClick={() => setShowChangelog(true)} className="text-[10px] text-gray-400 font-sans hover:text-brand-blue transition-colors bg-white/80 px-2 py-1 rounded-none border border-gray-200">v4.23 BETA</button>
+                <button onClick={() => setShowChangelog(true)} className="text-[10px] text-gray-400 font-sans hover:text-brand-blue transition-colors bg-white/80 px-2 py-1 rounded-none border border-gray-200">v4.25 BETA</button>
             </div>
             {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
         </div>
