@@ -51,7 +51,7 @@ export interface IngredientDB {
   smoothie_mode: string[];
 }
 
-export type GameState = "HOME" | "PLAYING" | "RESULT_SUCCESS" | "RESULT_FAIL" | "CUSTOM_BOWL";
+export type GameState = "HOME" | "PLAYING" | "RESULT_SUCCESS" | "RESULT_FAIL" | "CUSTOM_BOWL" | "RUSH_PLAYING" | "RUSH_GAME_OVER";
 
 export interface Phase {
   key: string;

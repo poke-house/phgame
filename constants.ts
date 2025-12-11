@@ -24,8 +24,18 @@ export const FINAL_CUSTOM_PHRASES: BilingualMessage[] = [
     { pt: "Muito obrigado, volte mais vezes!", en: "Thank you very much, come back soon!" }
 ];
 
+export const RUSH_MESSAGES = [
+    { threshold: 2, msg: { pt: "Foi tranquilo hoje 🤙", en: "Easy day today 🤙" } },
+    { threshold: 5, msg: { pt: "O delivery deu uma pegada hoje ein! 🛵", en: "Delivery was intense today! 🛵" } },
+    { threshold: 10, msg: { pt: "Gente, tem promoção ativa? 🤔", en: "Guys, is there an active promo? 🤔" } },
+    { threshold: 15, msg: { pt: "2x1 de Chicken 😮", en: "2 for 1 Chicken 😮" } },
+    { threshold: 20, msg: { pt: "🆘 Benedita liberou uma promoção!!", en: "🆘 Benedita released a promo!!" } },
+    { threshold: 25, msg: { pt: "🔥modo On Fire ON🔥", en: "🔥On Fire Mode ON🔥" } }
+];
+
 export const CHANGELOG = [
-    { version: "4.28", date: "Atual", changes: ["Adicionado suporte a Inglês (EN).", "Botão de troca de idioma no canto inferior direito."] },
+    { version: "5.01", date: "Atual", changes: ["Novo modo de jogo: 😰 Hora do Lodo.", "Desafie-se com receitas aleatórias e morte súbita."] },
+    { version: "4.28", date: "Anterior", changes: ["Adicionado suporte a Inglês (EN).", "Botão de troca de idioma no canto inferior direito."] },
     { version: "4.27", date: "Anterior", changes: ["Textos de instrução personalizados para 'Tamanho' e 'Base' no modo House Bowl."] },
     { version: "4.26", date: "Anterior", changes: ["Histórico de versões limitado às 5 mais recentes."] },
     { version: "4.25", date: "Anterior", changes: ["Cor do título 'Molho' no modo Crie sua Bowl atualizada para laranja.", "Mensagem final do Crie sua Bowl simplificada (sem emoji, texto fixo)."] },

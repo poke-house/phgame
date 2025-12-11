@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GameState, Recipe, PaPersona, Language, BilingualMessage } from './types';
 import { 
     RECIPES, INGREDIENTS_DB, THEMES, SUCCESS_MESSAGES, FAIL_MESSAGES, 
-    PA_NAMES, PA_EMOJIS, FINAL_CUSTOM_PHRASES, PHASES_BOWL, PHASES_SMOOTHIE, CHANGELOG
+    PA_NAMES, PA_EMOJIS, FINAL_CUSTOM_PHRASES, PHASES_BOWL, PHASES_SMOOTHIE, CHANGELOG, RUSH_MESSAGES
 } from './constants';
 import { TRANSLATIONS } from './translations';
 import { playSound } from './utils/sound';
@@ -31,6 +31,7 @@ function App() {
     const [showPopup, setShowPopup] = useState<{ msg: string; callback: () => void } | null>(null);
     const [easterEggTrigger, setEasterEggTrigger] = useState(0);
     const [dancingEmoji, setDancingEmoji] = useState<number | null>(null);
+    const [rushScore, setRushScore] = useState(0);
 
     const handleEasterEggClick = () => { if (window.innerWidth < 768) { setEasterEggTrigger(prev => prev + 1); } };
     
@@ -50,7 +51,7 @@ function App() {
             return;
         }
         const interval = setInterval(() => {
-            const next = Math.floor(Math.random() * 3);
+            const next = Math.floor(Math.random() * 4);
             setDancingEmoji(next);
             setTimeout(() => setDancingEmoji(null), 1500);
         }, 3000);
@@ -126,7 +127,7 @@ function App() {
     };
 
     const getScrollClass = () => {
-        if (gameState === "PLAYING" && selectedRecipe) {
+        if ((gameState === "PLAYING" || gameState === "RUSH_PLAYING") && selectedRecipe) {
             if (selectedRecipe.category === "HOUSE") return "scroll-blue";
             if (selectedRecipe.category === "GREEN") return "scroll-pink";
             if (selectedRecipe.category === "SMOOTHIE") return "scroll-yellow";
@@ -136,6 +137,7 @@ function App() {
             if (customPhase === 7) return "scroll-yellow"; 
             return "scroll-blue"; 
         }
+        if (gameState === "RUSH_GAME_OVER") return "scroll-rush";
         if (gameState === "RESULT_FAIL") return "scroll-red";
         return "scroll-blue";
     };
@@ -152,12 +154,16 @@ function App() {
 
     useEffect(() => {
         let interval: any;
-        if (gameState === "PLAYING") {
+        if (gameState === "PLAYING" || gameState === "RUSH_PLAYING") {
             interval = setInterval(() => {
                 setTimer(prev => {
                     if (prev <= 1) {
                         clearInterval(interval);
-                        handleGameOver(false, [t('timer_ended')]);
+                        if (gameState === "RUSH_PLAYING") {
+                            handleRushGameOver([t('timer_ended')]);
+                        } else {
+                            handleGameOver(false, [t('timer_ended')]);
+                        }
                         return 0;
                     }
                     return prev - 1;
@@ -168,7 +174,7 @@ function App() {
     }, [gameState]);
     
     useEffect(() => {
-        if (gameState === "PLAYING" && selectedRecipe) {
+        if ((gameState === "PLAYING" || gameState === "RUSH_PLAYING") && selectedRecipe) {
             const activePhases = getCurrentPhases();
             const phaseKey = activePhases[currentPhaseIndex].key;
             if (phaseKey === "size") { setPhaseOptions(INGREDIENTS_DB.sizes); return; }
@@ -202,6 +208,22 @@ function App() {
     const startGame = (recipe: Recipe) => { 
         setSelectedRecipe(recipe); 
         setGameState("PLAYING"); 
+        setupRecipeStart(recipe, false);
+    };
+    
+    const startRushMode = () => {
+        setRushScore(0);
+        nextRushRound();
+    };
+    
+    const nextRushRound = () => {
+        const randomRecipe = RECIPES[Math.floor(Math.random() * RECIPES.length)];
+        setSelectedRecipe(randomRecipe);
+        setGameState("RUSH_PLAYING");
+        setupRecipeStart(randomRecipe, true);
+    };
+
+    const setupRecipeStart = (recipe: Recipe, isRush: boolean = false) => {
         if (recipe.category === "GREEN") { 
             setSelectedSize("Regular"); 
             setCurrentPhaseIndex(1); 
@@ -209,12 +231,18 @@ function App() {
             setSelectedSize(null); 
             setCurrentPhaseIndex(0); 
         } else { 
-            setSelectedSize(null); 
-            setCurrentPhaseIndex(0); 
+            if (isRush) {
+                const randomSize = Math.random() > 0.5 ? "Regular" : "Large";
+                setSelectedSize(randomSize);
+                setCurrentPhaseIndex(1);
+            } else {
+                setSelectedSize(null); 
+                setCurrentPhaseIndex(0); 
+            }
         } 
         setCurrentSelections([]); 
         setAllSelections({}); 
-        setTimer(20); 
+        setTimer(20);
     };
 
     const resetToHome = () => { 
@@ -243,6 +271,14 @@ function App() {
         }
         
         const isCorrect = requiredList.includes(ingredient); 
+        
+        if (gameState === "RUSH_PLAYING" && !isCorrect) {
+            const phaseTitle = t('phase_' + activePhases[currentPhaseIndex].key);
+            const errorMsg = t('instr_error_prefix', {phase: phaseTitle, required: requiredList.join(", ")});
+            handleRushGameOver([errorMsg]);
+            return;
+        }
+
         playSound(isCorrect ? "happy" : "sad");
         
         if (currentSelections.length >= requiredList.length && !requiredList.includes(ingredient)) return;
@@ -288,15 +324,36 @@ function App() {
             const requiredSorted = [...required].sort(); 
             const selectedSorted = [...finalSelections[phase.key]].sort(); 
             if (JSON.stringify(requiredSorted) !== JSON.stringify(selectedSorted)) { 
-                // We construct the error string but the phase name must be dynamic based on current language
-                // Since this error is stored in state, we might want to store keys, but for simplicity we store the string constructed at validation time.
-                // However, `t()` uses current state. If we switch language on result screen, these strings won't update.
-                // Given constraints, this is acceptable, or we could just update the phase name part.
                 const phaseTitle = t('phase_' + phase.key);
                 errors.push(t('instr_error_prefix', {phase: phaseTitle, required: requiredSorted.join(", ")})); 
             } 
         }); 
-        handleGameOver(errors.length === 0, errors); 
+        
+        if (gameState === "RUSH_PLAYING") {
+             if (errors.length === 0) {
+                 setRushScore(s => s + 1);
+                 playSound("happy");
+                 if (window.confetti) {
+                     window.confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
+                 }
+                 nextRushRound();
+             } else {
+                 handleRushGameOver(errors);
+             }
+        } else {
+            handleGameOver(errors.length === 0, errors);
+        }
+    };
+
+    const handleRushGameOver = (errors: string[] = []) => {
+        playSound("sad");
+        setErrorDetails(errors);
+        setGameState("RUSH_GAME_OVER");
+        const sorted = [...RUSH_MESSAGES].sort((a,b) => b.threshold - a.threshold);
+        const msgObj = sorted.find(m => rushScore >= m.threshold);
+        const defaultMsg = { pt: "Vamos lá, foco! 🧐", en: "Come on, focus! 🧐" };
+        const finalMsg = msgObj ? msgObj.msg : defaultMsg;
+        setResultMessage(finalMsg);
     };
 
     const handleGameOver = (success: boolean, errors: string[]) => { 
@@ -549,30 +606,31 @@ function App() {
             <FoodRain trigger={easterEggTrigger} quantity={1} />
             {showPopup && <PopupModal message={showPopup.msg} onConfirm={showPopup.callback} />}
 
-            <div className={`p-6 md:w-80 flex flex-col gap-4 z-10 shadow-fluent transition-colors duration-300 ${getSidebarClass()} ${gameState === "HOME" ? "w-full h-full overflow-y-auto" : (gameState === "CUSTOM_BOWL" ? "hidden" : "hidden md:flex h-full overflow-y-auto")} custom-scroll ${sidebarScrollClass}`}>
-                <div className="mb-4 flex justify-center">
-                    <img src="https://i.imgur.com/ILFq2UI.png" alt="Poke House" className="w-3/4 md:w-auto md:h-24 object-contain" />
+            <div className={`p-6 md:w-80 flex flex-col gap-4 z-10 shadow-fluent transition-colors duration-300 ${getSidebarClass()} ${gameState === "HOME" ? "w-full h-full" : (gameState === "CUSTOM_BOWL" ? "hidden" : "hidden md:flex h-full")} overflow-hidden custom-scroll ${sidebarScrollClass}`}>
+                <div className="flex-shrink flex justify-center min-h-[50px] transition-all duration-300">
+                    <img src="https://i.imgur.com/ILFq2UI.png" alt="Poke House" className="max-h-24 w-auto h-auto object-contain transition-all duration-300" />
                 </div>
                 {menuCategory === null && gameState !== "CUSTOM_BOWL" ? ( 
-                    <div className="flex flex-col gap-3 h-full justify-center md:justify-start">
+                    <div className="flex-1 flex flex-col gap-3 justify-center md:justify-start overflow-y-auto custom-scroll min-h-0">
                         <div onClick={handleEasterEggClick} className={`md:hidden text-5xl text-center py-4 cursor-pointer select-none transition-transform ${gameState === "HOME" ? "animate-bounce" : "hover:scale-110"}`}>🥗</div>
-                        <button onClick={initCustomGame} className="bg-gradient-to-r from-brand-pink to-pink-500 text-white p-4 rounded-win shadow-fluent hover:shadow-fluent-hover transition-all font-bold text-lg flex items-center justify-center gap-2 transform hover:scale-[1.02]">✨ {t('btn_create_bowl')} ✨</button> 
-                        <button onClick={() => setMenuCategory("HOUSE")} className={`group bg-pastel-blue-50 text-pastel-blue-text p-5 rounded-win shadow-sm hover:bg-pastel-blue-100 transition-all font-semibold text-lg flex items-center gap-3`}><span className={`text-2xl ${dancingEmoji === 0 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🐟</span> {t('menu_house')}</button>
-                        <button onClick={() => setMenuCategory("GREEN")} className={`group bg-pastel-pink-50 text-pastel-pink-text p-5 rounded-win shadow-sm hover:bg-pastel-pink-100 transition-all font-semibold text-lg flex items-center gap-3`}><span className={`text-2xl ${dancingEmoji === 1 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥗</span> {t('menu_green')}</button>
-                        <button onClick={() => setMenuCategory("SMOOTHIE")} className={`group bg-pastel-yellow-50 text-pastel-yellow-text p-5 rounded-win shadow-sm hover:bg-pastel-yellow-100 transition-all font-semibold text-lg flex items-center gap-3`}><span className={`text-2xl ${dancingEmoji === 2 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥤</span> {t('menu_smoothie')}</button>
+                        <button onClick={initCustomGame} className="bg-gradient-to-r from-brand-pink to-pink-500 text-white p-4 rounded-win shadow-fluent hover:shadow-fluent-hover transition-all font-bold text-lg flex items-center justify-center gap-2 transform hover:scale-[1.02] flex-shrink-0">✨ {t('btn_create_bowl')} ✨</button> 
+                        <button onClick={() => setMenuCategory("HOUSE")} className={`group bg-pastel-blue-50 text-pastel-blue-text p-5 rounded-win shadow-sm hover:bg-pastel-blue-100 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 0 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🐟</span> {t('menu_house')}</button>
+                        <button onClick={() => setMenuCategory("GREEN")} className={`group bg-pastel-pink-50 text-pastel-pink-text p-5 rounded-win shadow-sm hover:bg-pastel-pink-100 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 1 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥗</span> {t('menu_green')}</button>
+                        <button onClick={() => setMenuCategory("SMOOTHIE")} className={`group bg-pastel-yellow-50 text-pastel-yellow-text p-5 rounded-win shadow-sm hover:bg-pastel-yellow-100 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 2 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥤</span> {t('menu_smoothie')}</button>
+                        <button onClick={startRushMode} className={`group bg-rush-100 text-rush-900 p-5 rounded-win shadow-sm hover:bg-rush-200 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 3 ? 'animate-dance' : 'group-hover:animate-dance'}`}>😰</span> {t('menu_rush')}</button>
                     </div> 
                 ) : gameState !== "CUSTOM_BOWL" && ( 
-                    <div className="flex flex-col gap-2 animate-fade-in">
-                        <button onClick={() => setMenuCategory(null)} className={`mb-2 font-medium flex items-center gap-2 px-3 py-2 rounded-win transition-colors ${getBackBtnClass()}`}><IconArrowLeft size={18}/> {t('btn_back')}</button>
-                        <h3 className="font-bold text-gray-500 text-xs uppercase tracking-wider mb-2 px-1">{menuCategory} MENU</h3>
-                        {RECIPES.filter(r => r.category === menuCategory).map(recipe => ( 
-                            <button key={recipe.id} onClick={() => startGame(recipe)} disabled={gameState === "PLAYING" && selectedRecipe?.id !== recipe.id} className={`p-4 rounded-win text-left font-medium text-sm transition-all ${selectedRecipe?.id === recipe.id ? "bg-white/80 shadow-md scale-[1.02] font-bold" : `bg-transparent ${getRecipeHoverClass()}`} ${gameState === "PLAYING" && selectedRecipe?.id !== recipe.id ? "opacity-40 hidden md:block" : ""}`} style={{ color: selectedRecipe?.id === recipe.id ? 'inherit' : '#555' }}>{recipe.name}</button> 
+                    <div className="flex-1 flex flex-col gap-2 animate-fade-in overflow-y-auto custom-scroll min-h-0">
+                        <button onClick={() => setMenuCategory(null)} className={`mb-2 font-medium flex items-center gap-2 px-3 py-2 rounded-win transition-colors flex-shrink-0 ${getBackBtnClass()}`}><IconArrowLeft size={18}/> {t('btn_back')}</button>
+                        <h3 className="font-bold text-gray-500 text-xs uppercase tracking-wider mb-2 px-1 flex-shrink-0">{menuCategory || (gameState === "RUSH_PLAYING" ? "RUSH MODE" : "MENU")}</h3>
+                        {menuCategory && RECIPES.filter(r => r.category === menuCategory).map(recipe => ( 
+                            <button key={recipe.id} onClick={() => startGame(recipe)} disabled={gameState === "PLAYING" && selectedRecipe?.id !== recipe.id} className={`p-4 rounded-win text-left font-medium text-sm transition-all flex-shrink-0 ${selectedRecipe?.id === recipe.id ? "bg-white/80 shadow-md scale-[1.02] font-bold" : `bg-transparent ${getRecipeHoverClass()}`} ${gameState === "PLAYING" && selectedRecipe?.id !== recipe.id ? "opacity-40 hidden md:block" : ""}`} style={{ color: selectedRecipe?.id === recipe.id ? 'inherit' : '#555' }}>{recipe.name}</button> 
                         ))}
                     </div> 
                 )}
             </div>
 
-            <div className={`flex-1 relative z-10 flex flex-col items-center justify-center p-4 pb-12 md:p-4 transition-colors duration-500 ${gameState === "PLAYING" ? currentTheme.bg : "bg-[#efbeb1]"} ${gameState === "HOME" ? "hidden md:flex" : "flex h-full"}`}>
+            <div className={`flex-1 relative z-10 flex flex-col items-center justify-center p-4 pb-12 md:p-4 transition-colors duration-500 ${(gameState === "PLAYING" || gameState === "RUSH_PLAYING") ? currentTheme.bg : "bg-[#efbeb1]"} ${gameState === "HOME" ? "hidden md:flex" : "flex h-full"}`}>
                 {gameState === "CUSTOM_BOWL" && ( 
                     <div className="w-full h-full md:h-auto md:max-h-[90vh] max-w-5xl bg-white/80 backdrop-blur-md rounded-win shadow-fluent flex flex-col overflow-hidden relative border border-white">
                         <div className="flex-1 overflow-hidden relative">{renderCustomBowl()}</div>
@@ -588,9 +646,13 @@ function App() {
                     </div> 
                 )}
                 
-                {gameState === "PLAYING" && selectedRecipe && ( 
+                {(gameState === "PLAYING" || gameState === "RUSH_PLAYING") && selectedRecipe && ( 
                     <div className={`w-full h-full md:h-auto md:max-h-[90vh] max-w-5xl bg-white/60 backdrop-blur-xl rounded-win shadow-fluent flex flex-col overflow-hidden animate-slide-up border ${currentTheme.border}`}>
-                        <div className={`p-3 bg-white/40 border-b ${currentTheme.border} text-center ${currentTheme.text} text-sm font-bold tracking-wide`}>{selectedRecipe.name} {selectedSize && `• ${selectedSize}`}</div>
+                        <div className={`p-3 bg-white/40 border-b ${currentTheme.border} flex justify-between items-center ${currentTheme.text} text-sm font-bold tracking-wide`}>
+                             <span className="w-1/3 text-left pl-2">{gameState === "RUSH_PLAYING" ? `😰 ${t('score_label')}: ${rushScore}` : ""}</span>
+                             <span className="w-1/3 text-center">{selectedRecipe.name} {selectedSize && `• ${selectedSize}`}</span>
+                             <span className="w-1/3"></span>
+                        </div>
                         <div className="flex justify-between items-center p-6 border-b border-white/40 bg-white/20">
                             <div><h2 className={`text-2xl font-bold ${currentTheme.text}`}>{t('phase_' + getCurrentPhaseData().key)}</h2><p className="text-sm text-gray-600 mt-1">{getInstructionText()}</p></div>
                             <div className="flex flex-col items-center bg-white/80 px-4 py-2 rounded-win shadow-sm"><span className={`text-2xl font-bold font-mono ${timer <= 5 ? 'text-red-500' : 'text-gray-700'}`}>00:{timer < 10 ? `0${timer}` : timer}</span></div>
@@ -623,6 +685,20 @@ function App() {
                         <p className="text-gray-600 mb-6">{resultMessage[language]}</p>
                         <div className={`bg-red-50 p-4 rounded-win text-left text-sm text-red-600 mb-8 border border-red-100 max-h-40 overflow-y-auto custom-scroll ${scrollClass}`}>{errorDetails.map((e, i) => <div key={i} className="mb-1 pb-1 border-b border-red-100 last:border-0">• {e}</div>)}</div>
                         <button onClick={resetToHome} className="w-full bg-gray-800 text-white px-6 py-3 rounded-win font-semibold hover:bg-black transition-colors shadow-lg flex items-center justify-center gap-2"><IconRotate size={18} /> {t('btn_retry')}</button>
+                    </div> 
+                )}
+                
+                {gameState === "RUSH_GAME_OVER" && ( 
+                    <div className="text-center p-10 bg-white rounded-win shadow-fluent animate-slide-up mx-4 max-w-md w-full border-t-8 border-rush-500">
+                        <div className="text-5xl mb-4">😰</div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">{t('res_rush_fail_title')}</h2>
+                        <div className="text-4xl font-bold text-rush-500 mb-4">{rushScore} {t('score_label')}</div>
+                        <p className="text-gray-600 mb-4 font-medium">{resultMessage[language]}</p>
+                        <div className={`bg-red-50 p-4 rounded-win text-left text-sm text-red-600 mb-8 border border-red-100 max-h-40 overflow-y-auto custom-scroll ${scrollClass}`}>
+                            {errorDetails.map((e, i) => <div key={i} className="mb-1 pb-1 border-b border-red-100 last:border-0">• {e}</div>)}
+                        </div>
+                        <button onClick={startRushMode} className="w-full bg-rush-500 text-white px-6 py-3 rounded-win font-semibold hover:bg-rush-900 transition-colors shadow-lg flex items-center justify-center gap-2 mb-3"><IconRotate size={18} /> {t('btn_retry')}</button>
+                        <button onClick={resetToHome} className="w-full bg-gray-200 text-gray-700 px-6 py-3 rounded-win font-semibold hover:bg-gray-300 transition-colors shadow-sm flex justify-center items-center">{t('btn_menu')}</button>
                     </div> 
                 )}
 

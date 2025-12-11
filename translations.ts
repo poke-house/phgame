@@ -8,12 +8,14 @@ export const TRANSLATIONS = {
         menu_house: "House Bowls",
         menu_green: "Green Bowls",
         menu_smoothie: "Smoothies",
+        menu_rush: "Hora do Lodo",
         btn_back: "Voltar",
         
         // Game UI
         timer_ended: "Tempo esgotado!",
         btn_undo: "Desfazer",
         btn_home_tooltip: "Voltar ao Início",
+        score_label: "Pontos",
         
         // Phases Titles
         phase_size: "Tamanho",
@@ -40,6 +42,7 @@ export const TRANSLATIONS = {
         // Results
         res_success_title: "Excelente!",
         res_fail_title: "Ops!",
+        res_rush_fail_title: "Fim do Lodo!",
         btn_menu: "Menu Principal",
         btn_retry: "Tentar Novamente",
 
@@ -84,12 +87,14 @@ export const TRANSLATIONS = {
         menu_house: "House Bowls",
         menu_green: "Green Bowls",
         menu_smoothie: "Smoothies",
+        menu_rush: "Rush Hour",
         btn_back: "Back",
         
         // Game UI
         timer_ended: "Time's up!",
         btn_undo: "Undo",
         btn_home_tooltip: "Back to Home",
+        score_label: "Score",
         
         // Phases Titles
         phase_size: "Size",
@@ -116,6 +121,7 @@ export const TRANSLATIONS = {
         // Results
         res_success_title: "Excellent!",
         res_fail_title: "Oops!",
+        res_rush_fail_title: "Rush Over!",
         btn_menu: "Main Menu",
         btn_retry: "Try Again",
 
