@@ -17,8 +17,8 @@ export const FoodRain = ({ trigger, quantity = 1 }: { trigger: number; quantity?
                 x: Math.random() * (canvas.width - size), // Ensure it spawns within width
                 y: -50,
                 vx: (Math.random() - 0.5) * 3, // Reduced horizontal speed slightly
-                vy: 1 + Math.random(), // Reduced initial vertical speed (was 2 + ...)
-                gravity: 0.02, // Very low positive gravity for slow fall
+                vy: 3 + Math.random(), // Increased falling speed (was 1 + ...)
+                gravity: 0.05, // Increased gravity (was 0.02)
                 emoji: EASTER_EGG_EMOJIS[Math.floor(Math.random() * EASTER_EGG_EMOJIS.length)],
                 size: size,
                 life: 1.0

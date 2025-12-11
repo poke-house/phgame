@@ -7,7 +7,13 @@ export const PA_EMOJIS = { MALE: ["👨", "🧔🏻", "👨🏿", "👨🏿‍�
 export const FINAL_CUSTOM_PHRASES = ["Uau! Ficou linda sua bowl!", "Bom apetite!", "Prontinho! Experimente um dos nosso sumos.", "Seu rosto é famíliar, já é nosso cliente né?", "Muito obrigado, volte mais vezes!"];
 
 export const CHANGELOG = [
-    { version: "4.17", date: "Atual", changes: ["Cores da tela de Sucesso atualizadas."] },
+    { version: "4.23", date: "Atual", changes: ["Correção da animação da salada na Home Desktop.", "Textos e cores do 'Crie sua Bowl' atualizados.", "Estilo dos botões de oferta de Sésamo atualizado.", "Receita do Cozy Chicken corrigida."] },
+    { version: "4.22", date: "Anterior", changes: ["Receita do Cozy Chicken atualizada.", "Animações na Sidebar e Home.", "Ajuste de preços e textos no 'Crie sua Bowl'."] },
+    { version: "4.21", date: "Anterior", changes: ["Estilização minimalista dos botões de navegação no 'Crie sua Bowl'."] },
+    { version: "4.20", date: "Anterior", changes: ["Categorização dos Greens no 'Crie sua Bowl'.", "Lógica de preços para itens Premium e Extras."] },
+    { version: "4.19", date: "Anterior", changes: ["Botões de tamanho no 'Crie sua Bowl' atualizados para fundo branco."] },
+    { version: "4.18", date: "Anterior", changes: ["Botão 'Voltar' adicionado às fases de escolha de lugar e tamanho no 'Crie sua Bowl'."] },
+    { version: "4.17", date: "Anterior", changes: ["Cores da tela de Sucesso atualizadas."] },
     { version: "4.16", date: "Anterior", changes: ["Correção do botão 'Voltar' da sidebar."] },
     { version: "4.15", date: "Anterior", changes: ["Contador de porções com cores temáticas no 'Crie sua Bowl'."] },
     { version: "4.14", date: "Anterior", changes: ["Contador de porções adicionado ao modo 'Crie sua Bowl'."] },
@@ -44,7 +50,7 @@ export const RECIPES: Recipe[] = [
     { id: 9, category: "GREEN", name: "The Caesar 🥗", variants: { "Regular": { base: ["Winter Salad", "Winter Salad", "Winter Salad"], sauce_base: ["Vinagrete"], greens: ["Tomate Cherry", "Tomate Cherry", "Grana Padano"], protein: ["Frango", "Frango", "Frango"], sauce_final: ["Creamy Caesar"], crispy: ["Bacon", "Croutons", "Lima"], sesame: ["Não"] } } },
     { id: 10, category: "GREEN", name: "Exotic Salmon 🥗", variants: { "Regular": { base: ["Coconut Basmati", "Espinafres", "Espinafres", "Espinafres"], sauce_base: ["Azeite de Limão"], greens: ["Batata Doce com Alecrim", "Batata Doce com Alecrim", "Brócolis", "Abacate"], protein: ["Filé de Salmão", "Filé de Salmão", "Filé de Salmão"], sauce_final: ["Sriracha Mayo"], crispy: ["Não leva"], sesame: ["Não"] } } },
     { id: 11, category: "GREEN", name: "Velvet Garden 🥗", variants: { "Regular": { base: ["Winter Salad", "Winter Salad", "Winter Salad"], sauce_base: ["Vinagrete"], greens: ["Cenoura c/ Soja", "Beterraba", "Azeitonas", "Pickle Cebola", "Feta", "Feta", "Feta"], protein: ["Não leva"], sauce_final: ["Manjericão e Hortelã"], crispy: ["Não leva"], sesame: ["Não"] } } },
-    { id: 12, category: "GREEN", name: "Cozy Chicken 🥗", variants: { "Regular": { base: ["Coconut Basmati", "Espinafres", "Espinafres", "Espinafres"], sauce_base: ["Azeite de Limão"], greens: ["Brócolis", "Batata Doce com Alecrim", "Couve roxa", "Courgette"], protein: ["Frango Vietnamita", "Frango Vietnamita", "Frango Vietnamita"], sauce_final: ["Soja"], crispy: ["Não leva"], sesame: ["Não"] } } },
+    { id: 12, category: "GREEN", name: "Cozy Chicken 🥗", variants: { "Regular": { base: ["Arroz basmati", "Espinafres", "Espinafres"], sauce_base: ["Azeite de Limão"], greens: ["Brócolis", "Batata Doce com Alecrim", "Couve roxa", "Courgette"], protein: ["Frango Vietnamita", "Frango Vietnamita", "Frango Vietnamita"], sauce_final: ["Soja"], crispy: ["Não leva"], sesame: ["Não"] } } },
     { id: 13, category: "SMOOTHIE", name: "Into the Sun 💛", smoothie_liquid: ["Leite de Coco"], smoothie_amount: ["150ml"], smoothie_ingredients: ["Manga 40g", "Manga 40g", "Ananás 30g", "Ananás 30g", "Banana 90g"], smoothie_ice: ["Gelo 60g"], smoothie_mode: ["Modo E", "Modo E"] },
     { id: 14, category: "SMOOTHIE", name: "Sweet Pink 🩷", smoothie_liquid: ["Leite"], smoothie_amount: ["150ml"], smoothie_ingredients: ["Morango", "Morango", "Morango", "Morango", "Banana 90g"], smoothie_ice: ["Gelo 60g"], smoothie_mode: ["Modo E", "Modo E"] },
     { id: 15, category: "SMOOTHIE", name: "So Green 💚", smoothie_liquid: ["Suco de Maçã"], smoothie_amount: ["250ml"], smoothie_ingredients: ["Pepino 20g", "Abacate 45g", "Espinafre 30g", "Sumo de Lima 25g", "Gengibre 5g"], smoothie_ice: ["Gelo 60g"], smoothie_mode: ["Modo E", "Modo E"] }

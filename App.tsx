@@ -28,8 +28,25 @@ function App() {
     const [paPersona, setPaPersona] = useState<PaPersona>({ name: "", emoji: "" });
     const [showPopup, setShowPopup] = useState<{ msg: string; callback: () => void } | null>(null);
     const [easterEggTrigger, setEasterEggTrigger] = useState(0);
+    const [dancingEmoji, setDancingEmoji] = useState<number | null>(null);
 
     const handleEasterEggClick = () => { if (window.innerWidth < 768) { setEasterEggTrigger(prev => prev + 1); } };
+
+    // Effect for random dancing emojis in sidebar
+    useEffect(() => {
+        if (gameState !== "HOME" && menuCategory !== null) {
+            setDancingEmoji(null);
+            return;
+        }
+        const interval = setInterval(() => {
+            // Randomly pick 0 (House), 1 (Green), or 2 (Smoothie)
+            const next = Math.floor(Math.random() * 3);
+            setDancingEmoji(next);
+            // Stop dancing after a short duration
+            setTimeout(() => setDancingEmoji(null), 1500);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [gameState, menuCategory]);
 
     const getCurrentPhases = () => { if (selectedRecipe?.category === "SMOOTHIE") return PHASES_SMOOTHIE; return PHASES_BOWL; };
     const getFullIngredientList = (key: string): string[] => { 
@@ -323,14 +340,72 @@ function App() {
 
     const handleCustomSelection = (item: string, type: string) => { 
         const popupTrigger = (msg: string) => setShowPopup({ msg, callback: () => { setShowPopup(null); addCustomItem(item, type); } }); 
-        if (type === 'base' && item === "Espinafres") return popupTrigger("Posso colocar um pouco de Azeite, se quiseres?"); 
-        if (type === 'base' && item === "Winter Salad") return popupTrigger("Posso colocar um pouco de Vinagrete, se quiseres?"); 
-        if (type === 'green' && (item === "Abacate" || item === "Manga" || item === "Wakame" || item === "Philadelphia")) { 
-            const price = item === "Abacate" ? "0,50€" : "0,30€"; 
-            return popupTrigger(`Este item é premium, tem um valor adicional de ${price}.`); 
-        } 
-        if (type === 'protein' && (item === "Salmão Braseado" || item === "Filé de Salmão")) return popupTrigger("Esta proteína tem um adicional de 0,50€."); 
-        if (type === 'sauce' && item === "Creme de Abacate") return popupTrigger("Este molho tem um adicional de 0,30€."); 
+        const size = (allSelections['size'] as string) || "Regular";
+
+        if (type === 'base' && item === "Espinafres") return popupTrigger("Posso colocar um pouco de azeite na base?"); 
+        if (type === 'base' && item === "Winter Salad") return popupTrigger("Posso colocar um pouco de vinagrete na base?"); 
+        
+        // Logic for Greens
+        if (type === 'green') {
+            const limit = size === "Large" ? 5 : 4;
+            const currentCount = currentSelections.length;
+            
+            const isAbacate = item === "Abacate";
+            const isOtherPremium = ["Philadelphia", "Wakame", "Manga"].includes(item);
+            
+            // Logic if Limit is reached (Extra Items)
+            if (currentCount >= limit) {
+                if (isAbacate) {
+                    return popupTrigger("Este é um item premium Extra! Ele tem um valor adicional de 1€. Tudo bem?");
+                } else if (isOtherPremium) {
+                    return popupTrigger("Este é um item premium Extra! Ele tem um valor adicional de 0.80€. Tudo bem?");
+                } else {
+                    return popupTrigger("Este é um item Extra! Ele tem um valor adicional de 0.80€. Tudo bem?");
+                }
+            }
+            
+            // Logic within limit (Premium Items)
+            if (isAbacate) {
+                return popupTrigger("Este é um item premium! Ele tem um valor adicional de 0.50€. Tudo bem?");
+            } else if (isOtherPremium) {
+                return popupTrigger("Este é um item premium! Ele tem um valor adicional de 0.30€. Tudo bem?");
+            }
+        }
+
+        // Logic for Sauces
+        if (type === 'sauce') {
+             const limit = 1;
+             const currentCount = currentSelections.length;
+             // If limit reached, it's an Extra
+             if (currentCount >= limit) {
+                if (item === "Creme de Abacate") {
+                     return popupTrigger("Este é um item Extra! Ele tem um valor adicional de 0.60€. Tudo bem?");
+                } else {
+                     return popupTrigger("Este é um item Extra! Ele tem um valor adicional de 0.30€. Tudo bem?");
+                }
+             } else {
+                 // Within limit
+                 if (item === "Creme de Abacate") return popupTrigger("Este molho tem um adicional de 0,30€."); 
+             }
+        }
+
+        // Logic for Proteins
+        if (type === 'protein') {
+            const limit = size === "Large" ? 3 : 2;
+            const currentCount = currentSelections.length;
+            const isExpensiveProtein = item === "Salmão Braseado" || item === "Filé de Salmão";
+
+             if (currentCount >= limit) {
+                if (isExpensiveProtein) {
+                    return popupTrigger("Este é um item Extra! Ele tem um valor adicional de 2.00€. Tudo bem?");
+                } else {
+                    return popupTrigger("Este é um item Extra! Ele tem um valor adicional de 1.50€. Tudo bem?");
+                }
+             } else {
+                 if (isExpensiveProtein) return popupTrigger("Esta proteína tem um adicional de 0,50€."); 
+             }
+        }
+        
         addCustomItem(item, type); 
     };
 
@@ -338,13 +413,14 @@ function App() {
         let limit = 99; 
         const size = (allSelections['size'] as string) || "Regular"; 
         if (type === 'base') limit = 2; 
-        if (type === 'green') limit = size === "Large" ? 5 : 4; 
-        if (type === 'protein') limit = size === "Large" ? 3 : 2; 
-        if (type === 'sauce') limit = 1; 
+        if (type === 'green') limit = 99; // Greens limit is soft, handled by handleCustomSelection for extras
+        if (type === 'protein') limit = 99; // Protein limit is soft, handled by handleCustomSelection for extras
+        if (type === 'sauce') limit = 99; // Sauce limit is soft, handled by handleCustomSelection for extras
         if (type === 'crispy') limit = 2; 
         
-        if (currentSelections.length < limit || (type === 'sauce' && currentSelections.length < 1)) { 
-            if (type === 'sauce') setCurrentSelections([item]); 
+        if (currentSelections.length < limit || ((type === 'sauce' || type === 'protein') && currentSelections.length < 99)) { 
+            if (type === 'sauce' && currentSelections.length === 0) setCurrentSelections([item]); 
+            // Allow multiple sauces/proteins for extras if handled by logic
             else setCurrentSelections(prev => [...prev, item]); 
             playSound("happy"); 
         } 
@@ -363,11 +439,29 @@ function App() {
 
     const renderCustomBowl = () => {
         const size = (allSelections['size'] as string) || "Regular";
+        
+        const renderGreenSection = (title: string, items: string[]) => (
+            <div className="mb-6 last:mb-0">
+                <h4 className="text-pastel-pink-text font-bold text-md mb-2 px-1 opacity-80 uppercase tracking-wide text-xs">{title}</h4>
+                <div className="grid grid-cols-2 gap-3">
+                    {items.map(ing => {
+                         const count = currentSelections.filter(i => i === ing).length;
+                         return (
+                            <button key={ing} onClick={() => handleCustomSelection(ing, 'green')} className={`relative p-3 rounded-win shadow-sm text-sm font-medium text-left btn-transition ${currentSelections.includes(ing) ? 'bg-pastel-pink-100 text-pastel-pink-text' : 'bg-white text-gray-700 hover:bg-pastel-pink-50 hover:text-pastel-pink-text'}`}>
+                                {ing}
+                                {count > 0 && <div className="absolute top-0 right-0 bg-brand-pink text-white w-8 h-8 flex items-center justify-center font-bold text-lg shadow-sm">{count}</div>}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+
         switch(customPhase) {
-            case 1: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in"><div className="text-6xl mb-4">{paPersona.emoji}</div><MessageBubble className="bg-pastel-blue-50" text={`Olá! Me chamo ${paPersona.name}. Já conhece a Poke House? Vou ajudar-te a escolher a bowl perfeita. Queres criar a tua?`} /><button onClick={handleCustomNext} className="bg-brand-pink text-white px-8 py-3 rounded-win font-bold text-lg shadow-fluent hover:bg-pink-600 transition-all btn-transition">Vamos lá!</button></div> );
-            case 2: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in"><MessageBubble className="bg-pastel-blue-50" text="Para comer aqui ou para levar?" /><div className="flex gap-4"><button onClick={handleCustomNext} className="bg-white text-pastel-blue-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-blue-50 btn-transition">AQUI</button><button onClick={() => setShowPopup({ msg: "A caixa para levar tem custo de 0,20€, ok?", callback: () => { setShowPopup(null); handleCustomNext(); } })} className="bg-white text-pastel-pink-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-pink-50 btn-transition">LEVAR</button></div></div> );
-            case 3: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in"><MessageBubble className="bg-pastel-blue-50" text="Qual tamanho prefere?" /><div className="flex gap-4"><button onClick={() => handleCustomSize("Large")} className="bg-pastel-blue-200 text-pastel-blue-text px-8 py-6 rounded-win font-bold text-2xl shadow-fluent hover:bg-pastel-blue-300 hover:scale-105 btn-transition">LARGE</button><button onClick={() => handleCustomSize("Regular")} className="bg-pastel-pink-200 text-pastel-pink-text px-8 py-6 rounded-win font-bold text-2xl shadow-fluent hover:bg-pastel-pink-300 hover:scale-105 btn-transition">REGULAR</button></div></div> );
-            case 4: return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-blue-50" text="Escolha até 2 bases:" isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{INGREDIENTS_DB.bases.map(ing => {
+            case 1: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in"><div className="text-6xl mb-4">{paPersona.emoji}</div><MessageBubble className="bg-pastel-blue-50 text-pastel-blue-text" text={`Olá! Me chamo ${paPersona.name}. Já conhece a Poke House? Vou ajudar-te a escolher a bowl perfeita. Queres criar a tua?`} /><button onClick={handleCustomNext} className="bg-brand-pink text-white px-8 py-3 rounded-win font-bold text-lg shadow-fluent hover:bg-pink-600 transition-all btn-transition">Vamos lá!</button></div> );
+            case 2: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in relative"><MessageBubble className="bg-pastel-blue-50 text-pastel-blue-text" text="Para comer aqui ou para levar?" /><div className="flex gap-4"><button onClick={handleCustomNext} className="bg-white text-pastel-blue-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-blue-50 btn-transition">AQUI</button><button onClick={() => setShowPopup({ msg: "A caixa para levar tem custo de 0,20€, ok?", callback: () => { setShowPopup(null); handleCustomNext(); } })} className="bg-white text-pastel-pink-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-pink-50 btn-transition">LEVAR</button></div><button onClick={handleCustomBack} className="absolute bottom-6 left-6 text-gray-500 hover:text-[#29B6F6] flex items-center gap-2 font-medium transition-colors"><IconArrowLeft size={20} /> Voltar</button></div> );
+            case 3: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in relative"><MessageBubble className="bg-pastel-blue-50 text-pastel-blue-text" text="Qual tamanho prefere?" /><div className="flex gap-4"><button onClick={() => handleCustomSize("Large")} className="bg-white text-pastel-blue-text px-8 py-6 rounded-win font-bold text-2xl shadow-sm hover:bg-pastel-blue-50 hover:scale-105 btn-transition">LARGE</button><button onClick={() => handleCustomSize("Regular")} className="bg-white text-pastel-pink-text px-8 py-6 rounded-win font-bold text-2xl shadow-sm hover:bg-pastel-pink-50 hover:scale-105 btn-transition">REGULAR</button></div><button onClick={handleCustomBack} className="absolute bottom-6 left-6 text-gray-500 hover:text-[#29B6F6] flex items-center gap-2 font-medium transition-colors"><IconArrowLeft size={20} /> Voltar</button></div> );
+            case 4: return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-blue-50 text-pastel-blue-text" text="Escolha 2 bases, por favor:" isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{INGREDIENTS_DB.bases.map(ing => {
                 const count = currentSelections.filter(i => i === ing).length;
                 return (
                 <button key={ing} onClick={() => handleCustomSelection(ing, 'base')} className={`relative p-4 rounded-win shadow-sm font-medium text-left btn-transition ${currentSelections.includes(ing) ? 'bg-pastel-blue-100 text-pastel-blue-text' : 'bg-white text-gray-700 hover:bg-pastel-blue-50 hover:text-pastel-blue-text'}`}>
@@ -375,15 +469,24 @@ function App() {
                     {count > 0 && <div className="absolute top-0 right-0 bg-brand-blue text-white w-8 h-8 flex items-center justify-center font-bold text-lg shadow-sm">{count}</div>}
                 </button>
             )})}</div></div> );
-            case 5: { const limit = size === "Large" ? 5 : 4; return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-pink-50" text={`Escolha ${limit} greens:`} isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{INGREDIENTS_DB.greens.map(ing => {
-                const count = currentSelections.filter(i => i === ing).length;
-                return (
-                <button key={ing} onClick={() => handleCustomSelection(ing, 'green')} className={`relative p-3 rounded-win shadow-sm text-sm font-medium text-left btn-transition ${currentSelections.includes(ing) ? 'bg-pastel-pink-100 text-pastel-pink-text' : 'bg-white text-gray-700 hover:bg-pastel-pink-50 hover:text-pastel-pink-text'}`}>
-                    {ing}
-                    {count > 0 && <div className="absolute top-0 right-0 bg-brand-pink text-white w-8 h-8 flex items-center justify-center font-bold text-lg shadow-sm">{count}</div>}
-                </button>
-            )})}</div></div> ); }
-            case 6: { const limit = size === "Large" ? 3 : 2; const proteins = INGREDIENTS_DB.proteins.filter(p => p !== "Wakame"); return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-blue-50" text={`Escolha ${limit} proteínas:`} isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{proteins.map(ing => {
+            case 5: { 
+                const limit = size === "Large" ? 5 : 4; 
+                const naturalGreens = ["Hummus", "Abacaxi", "Edamame", "Tomate Cherry", "Couve roxa", "Courgette", "Cenoura", "Grana Padano", "Pepino", "Feta", "Jalapeños", "Pickle Cebola", "Azeitonas", "Beterraba"];
+                const cookedGreens = ["Batata Doce com Alecrim", "Brócolis", "Milho", "Cenoura c/ Soja"];
+                const premiumGreens = ["Abacate", "Philadelphia", "Wakame", "Manga"];
+
+                return ( 
+                    <div className="flex flex-col h-full p-4 animate-fade-in">
+                        <div className="mb-4"><MessageBubble className="bg-pastel-pink-50 text-[#880E4F]" text={`Escolha ${limit} greens, por favor:`} isTitle={true} /></div>
+                        <div className={`flex-1 overflow-y-auto pb-20 custom-scroll ${scrollClass}`}>
+                            {renderGreenSection("Naturais", naturalGreens)}
+                            {renderGreenSection("Cozinhados", cookedGreens)}
+                            {renderGreenSection("Premium", premiumGreens)}
+                        </div>
+                    </div> 
+                ); 
+            }
+            case 6: { const limit = size === "Large" ? 3 : 2; const proteins = INGREDIENTS_DB.proteins.filter(p => p !== "Wakame"); return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-blue-50 text-pastel-blue-text" text={`Escolha ${limit} proteínas, por favor:`} isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{proteins.map(ing => {
                 const count = currentSelections.filter(i => i === ing).length;
                 return (
                 <button key={ing} onClick={() => handleCustomSelection(ing, 'protein')} className={`relative p-4 rounded-win shadow-sm font-medium text-left btn-transition ${currentSelections.includes(ing) ? 'bg-pastel-blue-100 text-pastel-blue-text' : 'bg-white text-gray-700 hover:bg-pastel-blue-50 hover:text-pastel-blue-text'}`}>
@@ -391,7 +494,7 @@ function App() {
                     {count > 0 && <div className="absolute top-0 right-0 bg-brand-blue text-white w-8 h-8 flex items-center justify-center font-bold text-lg shadow-sm">{count}</div>}
                 </button>
             )})}</div></div> ); }
-            case 7: return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-yellow-50" text="Escolha 1 molho:" isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{INGREDIENTS_DB.sauces_final.map(ing => {
+            case 7: return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-yellow-50 text-pastel-yellow-text" text="Escolha 1 molho, por favor:" isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{INGREDIENTS_DB.sauces_final.map(ing => {
                 const count = currentSelections.filter(i => i === ing).length;
                 return (
                 <button key={ing} onClick={() => handleCustomSelection(ing, 'sauce')} className={`relative p-4 rounded-win shadow-sm font-medium text-left btn-transition ${currentSelections.includes(ing) ? 'bg-pastel-yellow-100 text-pastel-yellow-text' : 'bg-white text-gray-700 hover:bg-pastel-yellow-50 hover:text-pastel-yellow-text'}`}>
@@ -399,7 +502,7 @@ function App() {
                     {count > 0 && <div className="absolute top-0 right-0 bg-pastel-yellow-500 text-white w-8 h-8 flex items-center justify-center font-bold text-lg shadow-sm">{count}</div>}
                 </button>
             )})}</div></div> );
-            case 8: return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-blue-50" text="Escolha 2 crispys:" isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{INGREDIENTS_DB.crispies.map(ing => {
+            case 8: return ( <div className="flex flex-col h-full p-4 animate-fade-in"><div className="mb-4"><MessageBubble className="bg-pastel-blue-50 text-pastel-blue-text" text="Escolha 2 crispys:" isTitle={true} /></div><div className={`flex-1 overflow-y-auto grid grid-cols-2 gap-3 pb-20 custom-scroll ${scrollClass}`}>{INGREDIENTS_DB.crispies.map(ing => {
                 const count = currentSelections.filter(i => i === ing).length;
                 return (
                 <button key={ing} onClick={() => handleCustomSelection(ing, 'crispy')} className={`relative p-4 rounded-win shadow-sm font-medium text-left btn-transition ${currentSelections.includes(ing) ? 'bg-pastel-blue-100 text-pastel-blue-text' : 'bg-white text-gray-700 hover:bg-pastel-blue-50 hover:text-pastel-blue-text'}`}>
@@ -407,7 +510,7 @@ function App() {
                     {count > 0 && <div className="absolute top-0 right-0 bg-brand-blue text-white w-8 h-8 flex items-center justify-center font-bold text-lg shadow-sm">{count}</div>}
                 </button>
             )})}</div></div> );
-            case 9: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in"><MessageBubble className="bg-pastel-blue-50" text="Aceita sésamo de oferta?" /><div className="flex gap-4"><button onClick={() => setCustomPhase(10)} className="bg-pastel-blue-200 text-pastel-blue-text px-10 py-4 rounded-win font-bold text-xl shadow-fluent hover:bg-pastel-blue-300 btn-transition">Sim</button><button onClick={() => setCustomPhase(10)} className="bg-white text-gray-600 px-10 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-gray-50 btn-transition">Não</button></div></div> );
+            case 9: return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-fade-in"><MessageBubble className="bg-pastel-blue-50 text-pastel-blue-text" text="Aceita sésamo de oferta?" /><div className="flex gap-4"><button onClick={() => setCustomPhase(10)} className="bg-white text-pastel-blue-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-blue-50 btn-transition">Sim</button><button onClick={() => setCustomPhase(10)} className="bg-white text-pastel-pink-text px-8 py-4 rounded-win font-bold text-xl shadow-sm hover:bg-pastel-pink-50 btn-transition">Não</button></div></div> );
             case 10: const finalPhrase = FINAL_CUSTOM_PHRASES[Math.floor(Math.random() * FINAL_CUSTOM_PHRASES.length)]; return ( <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 animate-slide-up"><div className="text-6xl">🎉</div><h2 className="text-3xl font-bold text-brand-blue">{finalPhrase}</h2><button onClick={resetToHome} className="bg-brand-pink text-white px-8 py-3 rounded-win font-bold shadow-fluent hover:bg-pink-600 transition-all flex items-center justify-center gap-2 w-full max-w-xs"><IconHome /> Voltar ao Início</button></div> );
             default: return null;
         }
@@ -424,11 +527,11 @@ function App() {
                 </div>
                 {menuCategory === null && gameState !== "CUSTOM_BOWL" ? ( 
                     <div className="flex flex-col gap-3 h-full justify-center md:justify-start">
-                        <div onClick={handleEasterEggClick} className="md:hidden text-5xl text-center py-4 cursor-pointer select-none hover:scale-110 transition-transform">🥗</div>
+                        <div onClick={handleEasterEggClick} className={`md:hidden text-5xl text-center py-4 cursor-pointer select-none transition-transform ${gameState === "HOME" ? "animate-bounce" : "hover:scale-110"}`}>🥗</div>
                         <button onClick={initCustomGame} className="bg-gradient-to-r from-brand-pink to-pink-500 text-white p-4 rounded-win shadow-fluent hover:shadow-fluent-hover transition-all font-bold text-lg flex items-center justify-center gap-2 transform hover:scale-[1.02]">✨ Crie sua Bowl ✨</button> 
-                        <button onClick={() => setMenuCategory("HOUSE")} className="group bg-pastel-blue-50 text-pastel-blue-text p-5 rounded-win shadow-sm hover:bg-pastel-blue-100 transition-all font-semibold text-lg flex items-center gap-3"><span className="text-2xl group-hover:animate-dance">🐟</span> House Bowls</button>
-                        <button onClick={() => setMenuCategory("GREEN")} className="group bg-pastel-pink-50 text-pastel-pink-text p-5 rounded-win shadow-sm hover:bg-pastel-pink-100 transition-all font-semibold text-lg flex items-center gap-3"><span className="text-2xl group-hover:animate-dance">🥗</span> Green Bowls</button>
-                        <button onClick={() => setMenuCategory("SMOOTHIE")} className="group bg-pastel-yellow-50 text-pastel-yellow-text p-5 rounded-win shadow-sm hover:bg-pastel-yellow-100 transition-all font-semibold text-lg flex items-center gap-3"><span className="text-2xl group-hover:animate-dance">🥤</span> Smoothies</button>
+                        <button onClick={() => setMenuCategory("HOUSE")} className={`group bg-pastel-blue-50 text-pastel-blue-text p-5 rounded-win shadow-sm hover:bg-pastel-blue-100 transition-all font-semibold text-lg flex items-center gap-3`}><span className={`text-2xl ${dancingEmoji === 0 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🐟</span> House Bowls</button>
+                        <button onClick={() => setMenuCategory("GREEN")} className={`group bg-pastel-pink-50 text-pastel-pink-text p-5 rounded-win shadow-sm hover:bg-pastel-pink-100 transition-all font-semibold text-lg flex items-center gap-3`}><span className={`text-2xl ${dancingEmoji === 1 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥗</span> Green Bowls</button>
+                        <button onClick={() => setMenuCategory("SMOOTHIE")} className={`group bg-pastel-yellow-50 text-pastel-yellow-text p-5 rounded-win shadow-sm hover:bg-pastel-yellow-100 transition-all font-semibold text-lg flex items-center gap-3`}><span className={`text-2xl ${dancingEmoji === 2 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥤</span> Smoothies</button>
                     </div> 
                 ) : gameState !== "CUSTOM_BOWL" && ( 
                     <div className="flex flex-col gap-2 animate-fade-in">
@@ -447,11 +550,11 @@ function App() {
                         <div className="flex-1 overflow-hidden relative">{renderCustomBowl()}</div>
                         {customPhase >= 4 && customPhase < 9 && ( 
                             <div className="h-24 bg-white/90 border-t border-gray-200 flex items-center justify-between px-8 shrink-0 z-20 relative">
-                                <button onClick={handleCustomBack} className="bg-gray-100 text-gray-600 p-4 rounded-none hover:bg-gray-200 transition-colors shadow-sm"><IconArrowLeft size={28}/></button>
+                                <button onClick={handleCustomBack} className="text-gray-500 hover:text-[#29B6F6] p-4 transition-colors transform hover:scale-110"><IconArrowLeft size={28}/></button>
                                 <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                                    <button onClick={resetToHome} className="bg-gray-100 text-gray-600 p-4 rounded-none hover:bg-gray-200 transition-colors shadow-sm"><IconHome size={28}/></button>
+                                    <button onClick={resetToHome} className="text-gray-500 hover:text-[#E91E63] p-4 transition-colors transform hover:scale-110"><IconHome size={28}/></button>
                                 </div>
-                                <button onClick={() => { if (checkStepComplete()) handleCustomNext(); }} className={`p-4 rounded-none transition-all duration-300 shadow-md flex items-center justify-center ${checkStepComplete() ? 'bg-brand-blue text-white animate-pulse-fast hover:scale-105 shadow-lg' : 'bg-gray-100 text-gray-300 cursor-default'}`}><IconArrowRight size={28}/></button>
+                                <button onClick={() => { if (checkStepComplete()) handleCustomNext(); }} className={`p-4 transition-all duration-300 transform ${checkStepComplete() ? 'text-[#29B6F6] animate-pulse-fast hover:scale-110 cursor-pointer' : 'text-gray-300 cursor-default'}`}><IconArrowRight size={28}/></button>
                             </div> 
                         )}
                     </div> 
@@ -497,7 +600,7 @@ function App() {
 
                 {gameState === "HOME" && ( 
                     <div className="hidden md:flex flex-col items-center justify-center text-center p-12 max-w-lg">
-                        <div className="mb-6"><span className="text-6xl drop-shadow-sm">🥗</span></div>
+                        <div className="mb-6"><div className="text-6xl drop-shadow-sm animate-bounce">🥗</div></div>
                         <h1 className="font-bold text-3xl mb-2 text-[#234171]">Treino Poke House</h1>
                         <p className="text-[#234171]">Selecione uma categoria ao lado para treinar.</p>
                     </div> 
@@ -505,7 +608,7 @@ function App() {
             </div>
             
             <div className="fixed bottom-1 right-1 z-50 opacity-50 hover:opacity-100 transition-opacity">
-                <button onClick={() => setShowChangelog(true)} className="text-[10px] text-gray-400 font-sans hover:text-brand-blue transition-colors bg-white/80 px-2 py-1 rounded-none border border-gray-200">v4.17 BETA</button>
+                <button onClick={() => setShowChangelog(true)} className="text-[10px] text-gray-400 font-sans hover:text-brand-blue transition-colors bg-white/80 px-2 py-1 rounded-none border border-gray-200">v4.23 BETA</button>
             </div>
             {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
         </div>
