@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { GameState, Recipe, PaPersona, Language, BilingualMessage } from './types';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { GameState, Recipe, PaPersona, Language, BilingualMessage, QuizQuestion } from './types';
 import { 
     RECIPES, INGREDIENTS_DB, THEMES, SUCCESS_MESSAGES, FAIL_MESSAGES, 
-    PA_NAMES, PA_EMOJIS, FINAL_CUSTOM_PHRASES, PHASES_BOWL, PHASES_SMOOTHIE, CHANGELOG, RUSH_MESSAGES
+    PA_NAMES, PA_EMOJIS, FINAL_CUSTOM_PHRASES, PHASES_BOWL, PHASES_SMOOTHIE, CHANGELOG, RUSH_MESSAGES,
+    QUIZ_QUESTIONS
 } from './constants';
 import { TRANSLATIONS } from './translations';
 import { playSound } from './utils/sound';
@@ -34,6 +36,12 @@ function App() {
     const [rushScore, setRushScore] = useState(0);
     const [rushLives, setRushLives] = useState(3);
 
+    // Quiz States
+    const [currentQuizQuestion, setCurrentQuizQuestion] = useState<QuizQuestion | null>(null);
+    const [quizOptions, setQuizOptions] = useState<string[]>([]);
+    const [quizCorrectAnswer, setQuizCorrectAnswer] = useState<string>("");
+    const [quizFeedbackTimer, setQuizFeedbackTimer] = useState<number | null>(null);
+
     const handleEasterEggClick = () => { if (window.innerWidth < 768) { setEasterEggTrigger(prev => prev + 1); } };
     
     // Translation Helper
@@ -52,7 +60,7 @@ function App() {
             return;
         }
         const interval = setInterval(() => {
-            const next = Math.floor(Math.random() * 4);
+            const next = Math.floor(Math.random() * 5); // Aumentado para 5 categorias
             setDancingEmoji(next);
             setTimeout(() => setDancingEmoji(null), 1500);
         }, 3000);
@@ -102,7 +110,7 @@ function App() {
         return t('instr_generic_single');
     };
 
-    const currentTheme = selectedRecipe ? THEMES[selectedRecipe.category] : THEMES.HOUSE;
+    const currentTheme = selectedRecipe ? THEMES[selectedRecipe.category] : (gameState.startsWith("QUIZ") ? THEMES.QUIZ : THEMES.HOUSE);
 
     // Sidebar Logic
     const getSidebarClass = () => {
@@ -140,6 +148,7 @@ function App() {
         }
         if (gameState === "RUSH_GAME_OVER" || gameState === "RUSH_ERROR" || gameState === "RUSH_SELECT") return "scroll-rush";
         if (gameState === "RESULT_FAIL") return "scroll-red";
+        if (gameState.startsWith("QUIZ")) return "scroll-blue"; // Quiz usa tons de azul ou verde
         return "scroll-blue";
     };
 
@@ -155,13 +164,15 @@ function App() {
 
     useEffect(() => {
         let interval: any;
-        if (gameState === "PLAYING" || gameState === "RUSH_PLAYING") {
+        if (gameState === "PLAYING" || gameState === "RUSH_PLAYING" || gameState === "QUIZ_PLAYING") {
             interval = setInterval(() => {
                 setTimer(prev => {
                     if (prev <= 1) {
                         clearInterval(interval);
                         if (gameState === "RUSH_PLAYING") {
                             handleRushError([t('timer_ended')]);
+                        } else if (gameState === "QUIZ_PLAYING") {
+                            handleQuizFail();
                         } else {
                             handleGameOver(false, [t('timer_ended')]);
                         }
@@ -170,7 +181,14 @@ function App() {
                     return prev - 1;
                 });
             }, 1000);
-        } else { setTimer(20); }
+        } else { 
+            // Não reinicia o timer se estiver em feedback
+            if (gameState !== "QUIZ_FEEDBACK") {
+                // Fix: inside this else block, gameState is guaranteed not to be QUIZ_PLAYING.
+                // Resetting to default 20s.
+                setTimer(20); 
+            }
+        }
         return () => clearInterval(interval);
     }, [gameState]);
     
@@ -206,6 +224,7 @@ function App() {
         }
     }, [currentPhaseIndex, gameState, selectedRecipe, selectedSize]);
 
+    // Game Starters
     const startGame = (recipe: Recipe) => { 
         setSelectedRecipe(recipe); 
         setGameState("PLAYING"); 
@@ -215,7 +234,61 @@ function App() {
     const startRushMode = () => {
         setGameState("RUSH_SELECT");
     };
-    
+
+    const startQuizMode = () => {
+        setGameState("QUIZ_PLAYING");
+        nextQuizQuestion();
+    };
+
+    const nextQuizQuestion = () => {
+        const randomIndex = Math.floor(Math.random() * QUIZ_QUESTIONS.length);
+        const q = QUIZ_QUESTIONS[randomIndex];
+        setCurrentQuizQuestion(q);
+        setQuizCorrectAnswer(q.options[0]); // Primeira é sempre correta
+        setQuizOptions(shuffleArray([...q.options]));
+        setTimer(10);
+        setGameState("QUIZ_PLAYING");
+    };
+
+    const handleQuizAnswer = (answer: string) => {
+        if (gameState !== "QUIZ_PLAYING") return;
+        
+        if (answer === quizCorrectAnswer) {
+            playSound("happy");
+            // Relying on global Window augmentation in types.ts
+            if (window.confetti) {
+                window.confetti({ particleCount: 30, spread: 40, origin: { y: 0.8 }, colors: ['#10B981'] });
+            }
+            nextQuizQuestion();
+        } else {
+            handleQuizFail();
+        }
+    };
+
+    const handleQuizFail = () => {
+        playSound("sad");
+        setGameState("QUIZ_FEEDBACK");
+        setQuizFeedbackTimer(5);
+    };
+
+    // Feedback Timer for Quiz
+    useEffect(() => {
+        let interval: any;
+        if (gameState === "QUIZ_FEEDBACK" && quizFeedbackTimer !== null) {
+            interval = setInterval(() => {
+                setQuizFeedbackTimer(prev => {
+                    if (prev !== null && prev <= 1) {
+                        clearInterval(interval);
+                        resetToHome();
+                        return null;
+                    }
+                    return prev !== null ? prev - 1 : null;
+                });
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [gameState, quizFeedbackTimer]);
+
     const confirmRushStart = (lives: number) => {
         setRushScore(0);
         setRushLives(lives);
@@ -256,6 +329,7 @@ function App() {
         setMenuCategory(null); 
         setSelectedRecipe(null); 
         setSelectedSize(null); 
+        setCurrentQuizQuestion(null);
         setTimer(20); 
     };
     
@@ -339,6 +413,7 @@ function App() {
              if (errors.length === 0) {
                  setRushScore(s => s + 1);
                  playSound("happy");
+                 // Relying on global Window augmentation in types.ts
                  if (window.confetti) {
                      window.confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
                  }
@@ -382,6 +457,7 @@ function App() {
         if (success) { 
             setGameState("RESULT_SUCCESS"); 
             playSound("happy"); 
+            // Relying on global Window augmentation in types.ts
             if (window.confetti) {
                 window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#E91E63', '#2196F3', '#FFC107'] });
             }
@@ -640,6 +716,7 @@ function App() {
                         <button onClick={() => setMenuCategory("GREEN")} className={`group bg-pastel-pink-50 text-pastel-pink-text p-5 rounded-win shadow-sm hover:bg-pastel-pink-100 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 1 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥗</span> {t('menu_green')}</button>
                         <button onClick={() => setMenuCategory("SMOOTHIE")} className={`group bg-pastel-yellow-50 text-pastel-yellow-text p-5 rounded-win shadow-sm hover:bg-pastel-yellow-100 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 2 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥤</span> {t('menu_smoothie')}</button>
                         <button onClick={startRushMode} className={`group bg-rush-100 text-rush-900 p-5 rounded-win shadow-sm hover:bg-rush-200 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 3 ? 'animate-dance' : 'group-hover:animate-dance'}`}>😰</span> {t('menu_rush')}</button>
+                        <button onClick={startQuizMode} className={`group bg-emerald-100 text-emerald-900 p-5 rounded-win shadow-sm hover:bg-emerald-200 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 4 ? 'animate-dance' : 'group-hover:animate-dance'}`}>⁉️</span> {t('menu_quiz')}</button>
                     </div> 
                 ) : gameState !== "CUSTOM_BOWL" && ( 
                     <div className="flex-1 flex flex-col gap-2 animate-fade-in overflow-y-auto custom-scroll min-h-0">
@@ -652,7 +729,69 @@ function App() {
                 )}
             </div>
 
-            <div className={`flex-1 relative z-10 flex flex-col items-center justify-center p-4 pb-12 md:p-4 transition-colors duration-500 ${(gameState === "PLAYING" || gameState === "RUSH_PLAYING") ? currentTheme.bg : "bg-[#efbeb1]"} ${gameState === "HOME" ? "hidden md:flex" : "flex h-full"}`}>
+            <div className={`flex-1 relative z-10 flex flex-col items-center justify-center p-4 pb-12 md:p-4 transition-colors duration-500 ${(gameState === "PLAYING" || gameState === "RUSH_PLAYING" || gameState === "QUIZ_PLAYING" || gameState === "QUIZ_FEEDBACK") ? currentTheme.bg : "bg-[#efbeb1]"} ${gameState === "HOME" ? "hidden md:flex" : "flex h-full"}`}>
+                
+                {/* Quiz Mode Layout */}
+                {gameState === "QUIZ_PLAYING" && currentQuizQuestion && (
+                    <div className="w-full max-w-2xl bg-white rounded-win shadow-fluent flex flex-col overflow-hidden animate-slide-up relative">
+                        {/* Header dedicated to Timer */}
+                        <div className="bg-emerald-50/50 p-4 border-b border-emerald-100 flex justify-end items-center relative overflow-hidden">
+                            {/* Visual Progress Bar */}
+                            <div 
+                                className="absolute top-0 left-0 h-1 bg-emerald-500 transition-all duration-1000 ease-linear" 
+                                style={{ width: `${(timer / 10) * 100}%` }}
+                            />
+                            
+                            <div className="flex items-center">
+                                <span className={`text-2xl font-bold font-mono ${timer <= 3 ? 'text-red-500 animate-pulse' : 'text-emerald-700'}`}>
+                                    00:{timer < 10 ? `0${timer}` : timer}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div className="p-10 md:p-14 text-center flex-1 flex flex-col justify-center gap-10">
+                             <h2 className="text-2xl md:text-3xl font-bold text-emerald-900 leading-snug">
+                                {currentQuizQuestion.question}
+                             </h2>
+                             
+                             <div className={`grid gap-4 w-full ${quizOptions.length === 2 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+                                {quizOptions.map((opt, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => handleQuizAnswer(opt)}
+                                        className="p-5 bg-emerald-50 border-2 border-emerald-100 rounded-win font-semibold text-emerald-800 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all shadow-sm transform hover:scale-[1.02] active:scale-95"
+                                    >
+                                        {opt}
+                                    </button>
+                                ))}
+                             </div>
+                        </div>
+
+                        <div className="p-4 bg-gray-50 flex justify-center">
+                            <button onClick={resetToHome} className="text-gray-400 hover:text-brand-pink p-2 transition-colors flex items-center gap-2 font-bold uppercase text-xs tracking-widest">
+                                <IconHome size={16} /> INÍCIO
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Quiz Feedback Layout */}
+                {gameState === "QUIZ_FEEDBACK" && (
+                    <div className="text-center p-12 bg-white rounded-win shadow-fluent animate-slide-up mx-4 max-w-md w-full border-t-8 border-red-500">
+                        <div className="text-5xl mb-6">😕</div>
+                        <h2 className="text-3xl font-bold text-gray-800 mb-4">{t('res_quiz_fail_title')}</h2>
+                        <p className="text-gray-500 mb-2 font-medium uppercase text-xs tracking-widest">{t('res_quiz_correct_is')}</p>
+                        <div className="bg-emerald-50 p-6 rounded-win text-emerald-800 font-bold text-xl mb-8 border border-emerald-100">
+                            {quizCorrectAnswer}
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            <button onClick={resetToHome} className="w-full bg-gray-800 text-white px-6 py-4 rounded-win font-bold hover:bg-black transition-colors shadow-lg flex items-center justify-center gap-2">
+                                <IconHome size={18} /> INÍCIO ({quizFeedbackTimer}s)
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {gameState === "CUSTOM_BOWL" && ( 
                     <div className="w-full h-full md:h-auto md:max-h-[90vh] max-w-5xl bg-white/80 backdrop-blur-md rounded-win shadow-fluent flex flex-col overflow-hidden relative border border-white">
                         <div className="flex-1 overflow-hidden relative">{renderCustomBowl()}</div>
@@ -684,12 +823,19 @@ function App() {
                 
                 {(gameState === "PLAYING" || gameState === "RUSH_PLAYING") && selectedRecipe && ( 
                     <div className={`w-full h-full md:h-auto md:max-h-[90vh] max-w-5xl bg-white/60 backdrop-blur-xl rounded-win shadow-fluent flex flex-col overflow-hidden animate-slide-up border ${currentTheme.border}`}>
-                        <div className={`p-3 bg-white/40 border-b ${currentTheme.border} flex justify-between items-center ${currentTheme.text} font-bold tracking-wide`}>
-                             <span className="w-1/4 text-left pl-2 text-sm">{gameState === "RUSH_PLAYING" ? `😰 ${t('score_label')}: ${rushScore}` : ""}</span>
-                             <span className="w-1/2 text-center text-xl md:text-2xl drop-shadow-sm">{selectedRecipe.name} {selectedSize && <span className="text-sm md:text-base block md:inline opacity-80 md:ml-2"> {selectedSize}</span>}</span>
-                             <span className="w-1/4 text-right pr-2 text-xl tracking-tighter">
+                        <div className={`p-4 bg-white/40 border-b ${currentTheme.border} flex justify-between items-center ${currentTheme.text} font-black tracking-tight`}>
+                             <div className="w-1/4 text-left pl-2 text-sm font-bold">{gameState === "RUSH_PLAYING" ? `😰 ${t('score_label')}: ${rushScore}` : ""}</div>
+                             <div className="flex-1 text-center">
+                                <span className="text-3xl md:text-5xl drop-shadow-md uppercase tracking-tighter block leading-none">{selectedRecipe.name}</span>
+                                {selectedSize && (
+                                    <div className="text-xs md:text-sm font-black opacity-60 tracking-widest mt-1 uppercase">
+                                        {selectedSize}
+                                    </div>
+                                )}
+                             </div>
+                             <div className="w-1/4 text-right pr-2 text-xl tracking-tighter">
                                 {gameState === "RUSH_PLAYING" && "❤️".repeat(rushLives)}
-                             </span>
+                             </div>
                         </div>
                         <div className="flex justify-between items-center p-6 border-b border-white/40 bg-white/20">
                             <div><h2 className={`text-2xl font-bold ${currentTheme.text}`}>{t('phase_' + getCurrentPhaseData().key)}</h2><p className="text-sm text-gray-600 mt-1">{getInstructionText()}</p></div>

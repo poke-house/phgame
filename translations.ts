@@ -1,3 +1,4 @@
+
 export const TRANSLATIONS = {
     pt: {
         // Home & Sidebar
@@ -8,6 +9,7 @@ export const TRANSLATIONS = {
         menu_green: "Green Bowls",
         menu_smoothie: "Smoothies",
         menu_rush: "Hora do Lodo",
+        menu_quiz: "Pensa Rápido",
         btn_back: "Voltar",
         
         // Game UI
@@ -43,6 +45,8 @@ export const TRANSLATIONS = {
         res_success_title: "Excelente!",
         res_fail_title: "Ops!",
         res_rush_fail_title: "Fim do Lodo!",
+        res_quiz_fail_title: "Errou!",
+        res_quiz_correct_is: "A resposta correta era:",
         btn_menu: "Menu Principal",
         btn_retry: "Tentar Novamente",
 
@@ -93,6 +97,7 @@ export const TRANSLATIONS = {
         menu_green: "Green Bowls",
         menu_smoothie: "Smoothies",
         menu_rush: "Rush Hour",
+        menu_quiz: "Fast Thinker",
         btn_back: "Back",
         
         // Game UI
@@ -128,6 +133,8 @@ export const TRANSLATIONS = {
         res_success_title: "Excellent!",
         res_fail_title: "Oops!",
         res_rush_fail_title: "Rush Over!",
+        res_quiz_fail_title: "Wrong!",
+        res_quiz_correct_is: "The correct answer was:",
         btn_menu: "Main Menu",
         btn_retry: "Try Again",
 

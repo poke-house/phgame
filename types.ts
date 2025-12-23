@@ -1,3 +1,4 @@
+
 export type Language = 'pt' | 'en';
 
 export interface Variant {
@@ -17,7 +18,6 @@ export interface Recipe {
   variants?: {
     [key: string]: Variant;
   };
-  // Smoothie specific fields
   smoothie_liquid?: string[];
   smoothie_amount?: string[];
   smoothie_ingredients?: string[];
@@ -32,6 +32,12 @@ export interface Theme {
   btn_default: string;
   btn_active: string;
   binary: string[];
+}
+
+export interface QuizQuestion {
+  id: number;
+  question: string;
+  options: string[]; // A primeira opção será sempre a correta nos dados brutos
 }
 
 export interface IngredientDB {
@@ -50,11 +56,11 @@ export interface IngredientDB {
   smoothie_mode: string[];
 }
 
-export type GameState = "HOME" | "PLAYING" | "RESULT_SUCCESS" | "RESULT_FAIL" | "CUSTOM_BOWL" | "RUSH_SELECT" | "RUSH_PLAYING" | "RUSH_ERROR" | "RUSH_GAME_OVER";
+export type GameState = "HOME" | "PLAYING" | "RESULT_SUCCESS" | "RESULT_FAIL" | "CUSTOM_BOWL" | "RUSH_SELECT" | "RUSH_PLAYING" | "RUSH_ERROR" | "RUSH_GAME_OVER" | "QUIZ_PLAYING" | "QUIZ_FEEDBACK";
 
 export interface Phase {
   key: string;
-  title: string; // Kept for fallback, but UI will use translation keys
+  title: string;
 }
 
 export interface PaPersona {
@@ -68,6 +74,7 @@ export interface BilingualMessage {
 }
 
 declare global {
+  // Correctly extend the global Window interface by using uppercase 'Window'
   interface Window {
     confetti: any;
     webkitAudioContext: typeof AudioContext;
