@@ -64,7 +64,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     { id: 22, question: "O que significa \"Be Honest, Stay Humble\"?", options: ["Ser honesto, manter-se humilde", "Ser rápido, ser limpo", "Trabalhar muito, sorrir", "Ser pontual, respeitar"] },
     { id: 23, question: "Quais são as duas novas House Bowls de Inverno?", options: ["Velvet Garden e Cozy Chicken", "Winter Salmon e Spicy Chicken", "Garden Mix e Hot Tuna", "Sweet Potato e Crispy Chicken"] },
     { id: 24, question: "Qual é a porção padrão da Winter Salad?", options: ["1 pinça de salada / 35g", "2 pinças de salada", "1 scoop 1/20", "1 mão cheia"] },
-    { id: 25, question: "Qual é o scoop utilizado para o Hummus na categoria Green?", options: ["Scoop 1/36 Rasa", "Scoop 1/20 Cheia", "Scoop 1/50 Rasa", "Pinça"] },
+    { id: 25, question: "Qual é o scoop utilizado para o Hummus na categoria Green?", options: ["Scoop 1/36 Rasa", "Scoop 1/20 Cheia", "Scoop 1/50 Rasa", "Scoop 1/36 Cheia"] },
     { id: 26, question: "Qual é a gramagem de uma porção de Pickle Cebola?", options: ["20g / 1 pinça", "10g / 1 colher", "30g / 1 scoop", "40g / 2 pinças"] },
     { id: 27, question: "Qual scoop se usa para a Cenoura, Sésamo e Soja (Warm)?", options: ["Scoop 1/20 Rasa", "Scoop 1/36 Cheia", "Pinça", "Scoop 1/8"] },
     { id: 28, question: "Qual a validade da Cenoura, Sésamo e Soja no balcão (warm)?", options: ["4 horas", "2 horas", "8 horas", "24 horas"] },

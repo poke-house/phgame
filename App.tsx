@@ -41,6 +41,7 @@ function App() {
     const [quizOptions, setQuizOptions] = useState<string[]>([]);
     const [quizCorrectAnswer, setQuizCorrectAnswer] = useState<string>("");
     const [quizFeedbackTimer, setQuizFeedbackTimer] = useState<number | null>(null);
+    const [quizScore, setQuizScore] = useState(0);
 
     const handleEasterEggClick = () => { if (window.innerWidth < 768) { setEasterEggTrigger(prev => prev + 1); } };
     
@@ -236,6 +237,7 @@ function App() {
     };
 
     const startQuizMode = () => {
+        setQuizScore(0);
         setGameState("QUIZ_PLAYING");
         nextQuizQuestion();
     };
@@ -254,6 +256,7 @@ function App() {
         if (gameState !== "QUIZ_PLAYING") return;
         
         if (answer === quizCorrectAnswer) {
+            setQuizScore(prev => prev + 1);
             playSound("happy");
             // Relying on global Window augmentation in types.ts
             if (window.confetti) {
@@ -734,14 +737,18 @@ function App() {
                 {/* Quiz Mode Layout */}
                 {gameState === "QUIZ_PLAYING" && currentQuizQuestion && (
                     <div className="w-full max-w-2xl bg-white rounded-win shadow-fluent flex flex-col overflow-hidden animate-slide-up relative">
-                        {/* Header dedicated to Timer */}
-                        <div className="bg-emerald-50/50 p-4 border-b border-emerald-100 flex justify-end items-center relative overflow-hidden">
+                        {/* Header dedicated to Timer & Score */}
+                        <div className="bg-emerald-50/50 p-4 border-b border-emerald-100 flex justify-between items-center relative overflow-hidden">
                             {/* Visual Progress Bar */}
                             <div 
                                 className="absolute top-0 left-0 h-1 bg-emerald-500 transition-all duration-1000 ease-linear" 
                                 style={{ width: `${(timer / 10) * 100}%` }}
                             />
                             
+                            <div className="flex items-center gap-2">
+                                <span className="text-emerald-900 font-black text-sm uppercase tracking-widest">{t('score_label')}: {quizScore}</span>
+                            </div>
+
                             <div className="flex items-center">
                                 <span className={`text-2xl font-bold font-mono ${timer <= 3 ? 'text-red-500 animate-pulse' : 'text-emerald-700'}`}>
                                     00:{timer < 10 ? `0${timer}` : timer}
@@ -778,8 +785,10 @@ function App() {
                 {/* Quiz Feedback Layout */}
                 {gameState === "QUIZ_FEEDBACK" && (
                     <div className="text-center p-12 bg-white rounded-win shadow-fluent animate-slide-up mx-4 max-w-md w-full border-t-8 border-red-500">
-                        <div className="text-5xl mb-6">😕</div>
-                        <h2 className="text-3xl font-bold text-gray-800 mb-4">{t('res_quiz_fail_title')}</h2>
+                        <div className="text-5xl mb-4">😕</div>
+                        <h2 className="text-3xl font-bold text-gray-800 mb-2">{t('res_quiz_fail_title')}</h2>
+                        <div className="text-3xl font-bold text-emerald-600 mb-6">{quizScore} {t('score_label')}</div>
+                        
                         <p className="text-gray-500 mb-2 font-medium uppercase text-xs tracking-widest">{t('res_quiz_correct_is')}</p>
                         <div className="bg-emerald-50 p-6 rounded-win text-emerald-800 font-bold text-xl mb-8 border border-emerald-100">
                             {quizCorrectAnswer}
