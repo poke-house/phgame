@@ -1,4 +1,5 @@
 
+
 export type Language = 'pt' | 'en';
 
 export interface Variant {
@@ -56,7 +57,7 @@ export interface IngredientDB {
   smoothie_mode: string[];
 }
 
-export type GameState = "HOME" | "PLAYING" | "RESULT_SUCCESS" | "RESULT_FAIL" | "CUSTOM_BOWL" | "RUSH_SELECT" | "RUSH_PLAYING" | "RUSH_ERROR" | "RUSH_GAME_OVER" | "QUIZ_PLAYING" | "QUIZ_FEEDBACK";
+export type GameState = "HOME" | "PLAYING" | "RESULT_SUCCESS" | "RESULT_FAIL" | "CUSTOM_BOWL" | "RUSH_SELECT" | "RUSH_PLAYING" | "RUSH_ERROR" | "RUSH_GAME_OVER" | "QUIZ_PLAYING" | "QUIZ_FEEDBACK" | "UNIVERSITY_SELECT" | "UNIVERSITY_PLAYING" | "UNIVERSITY_SUCCESS";
 
 export interface Phase {
   key: string;

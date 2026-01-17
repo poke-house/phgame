@@ -35,8 +35,9 @@ export const RUSH_MESSAGES = [
 ];
 
 export const CHANGELOG = [
-    { version: "5.10", date: "Atual", changes: ["Novo modo de jogo: ⁉️ Pensa Rápido.", "72 questões teóricas sobre SOP e cultura Poke House.", "Cronômetro de 10 segundos e feedback visual de erros."] },
-    { version: "5.05", date: "Anterior", changes: ["Adicionada seleção de loja na Hora do Lodo:", "🌊 Douradores: 3 vidas.", "🔥 Colombo: Morte súbita (sem vidas extras)."] }
+    { version: "5.20", date: "Atual", changes: ["Novo modo: 🎓 University.", "Aprenda as receitas passo a passo.", "Visualização em pilha de ingredientes."] },
+    { version: "5.10", date: "Anterior", changes: ["Novo modo de jogo: ⁉️ Pensa Rápido.", "72 questões teóricas sobre SOP e cultura Poke House.", "Cronômetro de 10 segundos e feedback visual de erros."] },
+    { version: "5.05", date: "Antigo", changes: ["Adicionada seleção de loja na Hora do Lodo:", "🌊 Douradores: 3 vidas.", "🔥 Colombo: Morte súbita (sem vidas extras)."] }
 ];
 
 export const QUIZ_QUESTIONS: QuizQuestion[] = [

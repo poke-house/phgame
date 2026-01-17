@@ -1,4 +1,5 @@
 
+
 export const TRANSLATIONS = {
     pt: {
         // Home & Sidebar
@@ -10,6 +11,7 @@ export const TRANSLATIONS = {
         menu_smoothie: "Smoothies",
         menu_rush: "Hora do Lodo",
         menu_quiz: "Pensa Rápido",
+        menu_university: "University",
         btn_back: "Voltar",
         
         // Game UI
@@ -47,6 +49,8 @@ export const TRANSLATIONS = {
         res_rush_fail_title: "Fim do Lodo!",
         res_quiz_fail_title: "Errou!",
         res_quiz_correct_is: "A resposta correta era:",
+        res_uni_success_title: "Parabéns!",
+        res_uni_success_msg: "Você completou o estudo desta receita.",
         btn_menu: "Menu Principal",
         btn_retry: "Tentar Novamente",
 
@@ -54,6 +58,11 @@ export const TRANSLATIONS = {
         rush_select_title: "O lodo hoje será na loja:",
         rush_btn_douradores: "🌊Douradores🌊",
         rush_btn_colombo: "🔥Colombo🔥",
+
+        // University
+        uni_select_category: "O que vamos estudar hoje?",
+        uni_step_progress: "Passo {current} de {total}",
+        uni_finished: "Receita Concluída!",
 
         // Custom Bowl Dialogs
         cb_intro: "Olá! Me chamo {name}. Já conhece a Poke House? Vou ajudar-te a escolher a bowl perfeita. Queres criar a tua?",
@@ -98,6 +107,7 @@ export const TRANSLATIONS = {
         menu_smoothie: "Smoothies",
         menu_rush: "Rush Hour",
         menu_quiz: "Fast Thinker",
+        menu_university: "University",
         btn_back: "Back",
         
         // Game UI
@@ -135,6 +145,8 @@ export const TRANSLATIONS = {
         res_rush_fail_title: "Rush Over!",
         res_quiz_fail_title: "Wrong!",
         res_quiz_correct_is: "The correct answer was:",
+        res_uni_success_title: "Congratulations!",
+        res_uni_success_msg: "You have completed studying this recipe.",
         btn_menu: "Main Menu",
         btn_retry: "Try Again",
 
@@ -142,6 +154,11 @@ export const TRANSLATIONS = {
         rush_select_title: "The rush today will be at:",
         rush_btn_douradores: "🌊Douradores🌊",
         rush_btn_colombo: "🔥Colombo🔥",
+
+        // University
+        uni_select_category: "What are we studying today?",
+        uni_step_progress: "Step {current} of {total}",
+        uni_finished: "Recipe Completed!",
 
         // Custom Bowl Dialogs
         cb_intro: "Hi! My name is {name}. Do you know Poke House? I'll help you choose the perfect bowl. Want to create your own?",

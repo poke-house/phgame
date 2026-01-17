@@ -43,6 +43,10 @@ function App() {
     const [quizFeedbackTimer, setQuizFeedbackTimer] = useState<number | null>(null);
     const [quizScore, setQuizScore] = useState(0);
 
+    // University Mode States
+    const [uniSteps, setUniSteps] = useState<{phase: string, item: string, count: number}[]>([]);
+    const [uniCurrentStep, setUniCurrentStep] = useState(0);
+
     const handleEasterEggClick = () => { if (window.innerWidth < 768) { setEasterEggTrigger(prev => prev + 1); } };
     
     // Translation Helper
@@ -61,7 +65,7 @@ function App() {
             return;
         }
         const interval = setInterval(() => {
-            const next = Math.floor(Math.random() * 5); // Aumentado para 5 categorias
+            const next = Math.floor(Math.random() * 6); // Aumentado para 6 categorias (com University)
             setDancingEmoji(next);
             setTimeout(() => setDancingEmoji(null), 1500);
         }, 3000);
@@ -115,7 +119,7 @@ function App() {
 
     // Sidebar Logic
     const getSidebarClass = () => {
-        if (menuCategory === null && gameState !== "CUSTOM_BOWL") return "bg-white/80 backdrop-blur-md";
+        if (menuCategory === null && gameState !== "CUSTOM_BOWL" && gameState !== "UNIVERSITY_SELECT") return "bg-white/80 backdrop-blur-md";
         if (menuCategory === "HOUSE") return "bg-pastel-blue-50";
         if (menuCategory === "GREEN") return "bg-pastel-pink-50";
         if (menuCategory === "SMOOTHIE") return "bg-pastel-yellow-50";
@@ -137,7 +141,7 @@ function App() {
     };
 
     const getScrollClass = () => {
-        if ((gameState === "PLAYING" || gameState === "RUSH_PLAYING") && selectedRecipe) {
+        if ((gameState === "PLAYING" || gameState === "RUSH_PLAYING" || gameState === "UNIVERSITY_PLAYING") && selectedRecipe) {
             if (selectedRecipe.category === "HOUSE") return "scroll-blue";
             if (selectedRecipe.category === "GREEN") return "scroll-pink";
             if (selectedRecipe.category === "SMOOTHIE") return "scroll-yellow";
@@ -149,7 +153,7 @@ function App() {
         }
         if (gameState === "RUSH_GAME_OVER" || gameState === "RUSH_ERROR" || gameState === "RUSH_SELECT") return "scroll-rush";
         if (gameState === "RESULT_FAIL") return "scroll-red";
-        if (gameState.startsWith("QUIZ")) return "scroll-blue"; // Quiz usa tons de azul ou verde
+        if (gameState.startsWith("QUIZ")) return "scroll-blue";
         return "scroll-blue";
     };
 
@@ -240,6 +244,69 @@ function App() {
         setQuizScore(0);
         setGameState("QUIZ_PLAYING");
         nextQuizQuestion();
+    };
+
+    const startUniversityMode = () => {
+        setGameState("UNIVERSITY_SELECT");
+    };
+
+    const startUniversityLevel = (recipe: Recipe) => {
+        setSelectedRecipe(recipe);
+        
+        // Flatten recipe for learning mode with grouping
+        let steps: {phase: string, item: string, count: number}[] = [];
+        const phases = recipe.category === "SMOOTHIE" ? PHASES_SMOOTHIE : PHASES_BOWL;
+        const validPhases = phases.filter(p => p.key !== "size"); // Skip size selection for learning, assume regular
+
+        validPhases.forEach(phase => {
+            let items: string[] = [];
+            if (recipe.category === "SMOOTHIE") {
+                items = (recipe as any)[phase.key] || [];
+            } else {
+                // Default to Regular for University Mode
+                items = recipe.variants && recipe.variants["Regular"] ? recipe.variants["Regular"][phase.key] : [];
+            }
+            
+            items.forEach(item => {
+                // Check if we can group with the last step
+                if (steps.length > 0) {
+                    const lastStep = steps[steps.length - 1];
+                    if (lastStep.phase === phase.title && lastStep.item === item) {
+                        lastStep.count += 1;
+                        return;
+                    }
+                }
+                
+                steps.push({
+                    phase: phase.title,
+                    item: item,
+                    count: 1
+                });
+            });
+        });
+
+        setUniSteps(steps);
+        setUniCurrentStep(0);
+        setGameState("UNIVERSITY_PLAYING");
+    };
+
+    const handleUniNext = () => {
+        if (uniCurrentStep < uniSteps.length) {
+            setUniCurrentStep(prev => prev + 1);
+            playSound("happy");
+            if (uniCurrentStep === uniSteps.length - 1) {
+                 if (window.confetti) {
+                    window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                }
+                setTimeout(() => setGameState("UNIVERSITY_SUCCESS"), 1000);
+            }
+        }
+    };
+
+    const handleUniPrev = () => {
+        if (uniCurrentStep > 0) {
+            setUniCurrentStep(prev => prev - 1);
+        }
     };
 
     const nextQuizQuestion = () => {
@@ -707,33 +774,146 @@ function App() {
             <FoodRain trigger={easterEggTrigger} quantity={1} />
             {showPopup && <PopupModal message={showPopup.msg} onConfirm={showPopup.callback} />}
 
-            <div className={`p-6 md:w-80 flex flex-col gap-4 z-10 shadow-fluent transition-colors duration-300 ${getSidebarClass()} ${gameState === "HOME" ? "w-full h-full" : (gameState === "CUSTOM_BOWL" ? "hidden" : "hidden md:flex h-full")} overflow-hidden custom-scroll ${sidebarScrollClass}`}>
+            <div className={`p-6 md:w-80 flex flex-col gap-4 z-10 shadow-fluent transition-colors duration-300 ${getSidebarClass()} ${gameState === "HOME" ? "w-full h-full" : (gameState === "CUSTOM_BOWL" || gameState === "UNIVERSITY_PLAYING" || gameState === "UNIVERSITY_SUCCESS" ? "hidden" : "hidden md:flex h-full")} overflow-hidden custom-scroll ${sidebarScrollClass}`}>
                 <div className="flex-shrink flex justify-center min-h-[50px] transition-all duration-300">
                     <img src="https://i.imgur.com/ILFq2UI.png" alt="Poke House" className="max-h-24 w-auto h-auto object-contain transition-all duration-300" />
                 </div>
-                {menuCategory === null && gameState !== "CUSTOM_BOWL" ? ( 
+                {menuCategory === null && gameState !== "CUSTOM_BOWL" && gameState !== "UNIVERSITY_SELECT" ? ( 
                     <div className="flex-1 flex flex-col gap-3 justify-center md:justify-start overflow-y-auto custom-scroll min-h-0">
                         <div onClick={handleEasterEggClick} className={`md:hidden text-5xl text-center py-4 cursor-pointer select-none transition-transform ${gameState === "HOME" ? "animate-bounce" : "hover:scale-110"}`}>🥗</div>
                         <button onClick={initCustomGame} className="bg-gradient-to-r from-brand-pink to-pink-500 text-white p-4 rounded-win shadow-fluent hover:shadow-fluent-hover transition-all font-bold text-lg flex items-center justify-center gap-2 transform hover:scale-[1.02] flex-shrink-0">✨ {t('btn_create_bowl')} ✨</button> 
+                        <button onClick={startUniversityMode} className={`group bg-purple-100 text-purple-900 p-5 rounded-win shadow-sm hover:bg-purple-200 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0 relative`}>
+                            <span className={`text-2xl ${dancingEmoji === 5 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🎓</span> {t('menu_university')}
+                            <div className="absolute bottom-2 right-2 bg-yellow-400 text-yellow-900 text-[10px] font-black px-2 py-0.5 -rotate-6 shadow-sm border border-white rounded-sm z-10">NEW MODE</div>
+                        </button>
                         <button onClick={() => setMenuCategory("HOUSE")} className={`group bg-pastel-blue-50 text-pastel-blue-text p-5 rounded-win shadow-sm hover:bg-pastel-blue-100 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 0 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🐟</span> {t('menu_house')}</button>
                         <button onClick={() => setMenuCategory("GREEN")} className={`group bg-pastel-pink-50 text-pastel-pink-text p-5 rounded-win shadow-sm hover:bg-pastel-pink-100 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 1 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥗</span> {t('menu_green')}</button>
                         <button onClick={() => setMenuCategory("SMOOTHIE")} className={`group bg-pastel-yellow-50 text-pastel-yellow-text p-5 rounded-win shadow-sm hover:bg-pastel-yellow-100 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 2 ? 'animate-dance' : 'group-hover:animate-dance'}`}>🥤</span> {t('menu_smoothie')}</button>
                         <button onClick={startRushMode} className={`group bg-rush-100 text-rush-900 p-5 rounded-win shadow-sm hover:bg-rush-200 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 3 ? 'animate-dance' : 'group-hover:animate-dance'}`}>😰</span> {t('menu_rush')}</button>
-                        <button onClick={startQuizMode} className={`group bg-emerald-100 text-emerald-900 p-5 rounded-win shadow-sm hover:bg-emerald-200 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0`}><span className={`text-2xl ${dancingEmoji === 4 ? 'animate-dance' : 'group-hover:animate-dance'}`}>⁉️</span> {t('menu_quiz')}</button>
+                        <button onClick={startQuizMode} className={`group bg-emerald-100 text-emerald-900 p-5 rounded-win shadow-sm hover:bg-emerald-200 transition-all font-semibold text-lg flex items-center gap-3 flex-shrink-0 relative`}>
+                            <span className={`text-2xl ${dancingEmoji === 4 ? 'animate-dance' : 'group-hover:animate-dance'}`}>⁉️</span> {t('menu_quiz')}
+                            <div className="absolute bottom-2 right-2 bg-yellow-400 text-yellow-900 text-[10px] font-black px-2 py-0.5 -rotate-6 shadow-sm border border-white rounded-sm z-10">NEW MODE</div>
+                        </button>
                     </div> 
                 ) : gameState !== "CUSTOM_BOWL" && ( 
                     <div className="flex-1 flex flex-col gap-2 animate-fade-in overflow-y-auto custom-scroll min-h-0">
-                        <button onClick={() => setMenuCategory(null)} className={`mb-2 font-medium flex items-center gap-2 px-3 py-2 rounded-win transition-colors flex-shrink-0 ${getBackBtnClass()}`}><IconArrowLeft size={18}/> {t('btn_back')}</button>
-                        <h3 className="font-bold text-gray-500 text-xs uppercase tracking-wider mb-2 px-1 flex-shrink-0">{menuCategory || ((gameState === "RUSH_PLAYING" || gameState === "RUSH_SELECT") ? "RUSH MODE" : "MENU")}</h3>
-                        {menuCategory && RECIPES.filter(r => r.category === menuCategory).map(recipe => ( 
-                            <button key={recipe.id} onClick={() => startGame(recipe)} disabled={gameState === "PLAYING" && selectedRecipe?.id !== recipe.id} className={`p-4 rounded-win text-left font-medium text-sm transition-all flex-shrink-0 ${selectedRecipe?.id === recipe.id ? "bg-white/80 shadow-md scale-[1.02] font-bold" : `bg-transparent ${getRecipeHoverClass()}`} ${gameState === "PLAYING" && selectedRecipe?.id !== recipe.id ? "opacity-40 hidden md:block" : ""}`} style={{ color: selectedRecipe?.id === recipe.id ? 'inherit' : '#555' }}>{recipe.name}</button> 
-                        ))}
+                        <button onClick={() => { if(gameState === "UNIVERSITY_SELECT" && menuCategory === null) resetToHome(); else setMenuCategory(null); }} className={`mb-2 font-medium flex items-center gap-2 px-3 py-2 rounded-win transition-colors flex-shrink-0 ${getBackBtnClass()}`}><IconArrowLeft size={18}/> {t('btn_back')}</button>
+                        <h3 className="font-bold text-gray-500 text-xs uppercase tracking-wider mb-2 px-1 flex-shrink-0">{menuCategory || ((gameState === "RUSH_PLAYING" || gameState === "RUSH_SELECT") ? "RUSH MODE" : (gameState === "UNIVERSITY_SELECT" ? "UNIVERSITY" : "MENU"))}</h3>
+                        
+                        {/* Logic for University Select */}
+                        {gameState === "UNIVERSITY_SELECT" && !menuCategory ? (
+                             <div className="flex flex-col gap-3">
+                                <p className="text-gray-600 text-sm mb-2">{t('uni_select_category')}</p>
+                                <button onClick={() => setMenuCategory("HOUSE")} className={`bg-pastel-blue-50 text-pastel-blue-text p-4 rounded-win shadow-sm hover:bg-pastel-blue-100 transition-all font-semibold text-left`}>🐟 {t('menu_house')}</button>
+                                <button onClick={() => setMenuCategory("GREEN")} className={`bg-pastel-pink-50 text-pastel-pink-text p-4 rounded-win shadow-sm hover:bg-pastel-pink-100 transition-all font-semibold text-left`}>🥗 {t('menu_green')}</button>
+                                <button onClick={() => setMenuCategory("SMOOTHIE")} className={`bg-pastel-yellow-50 text-pastel-yellow-text p-4 rounded-win shadow-sm hover:bg-pastel-yellow-100 transition-all font-semibold text-left`}>🥤 {t('menu_smoothie')}</button>
+                             </div>
+                        ) : (
+                            menuCategory && RECIPES.filter(r => r.category === menuCategory).map(recipe => ( 
+                                <button key={recipe.id} onClick={() => { if (gameState === "UNIVERSITY_SELECT") startUniversityLevel(recipe); else startGame(recipe); }} disabled={gameState === "PLAYING" && selectedRecipe?.id !== recipe.id} className={`p-4 rounded-win text-left font-medium text-sm transition-all flex-shrink-0 ${selectedRecipe?.id === recipe.id ? "bg-white/80 shadow-md scale-[1.02] font-bold" : `bg-transparent ${getRecipeHoverClass()}`} ${gameState === "PLAYING" && selectedRecipe?.id !== recipe.id ? "opacity-40 hidden md:block" : ""}`} style={{ color: selectedRecipe?.id === recipe.id ? 'inherit' : '#555' }}>{recipe.name}</button> 
+                            ))
+                        )}
                     </div> 
                 )}
             </div>
 
-            <div className={`flex-1 relative z-10 flex flex-col items-center justify-center p-4 pb-12 md:p-4 transition-colors duration-500 ${(gameState === "PLAYING" || gameState === "RUSH_PLAYING" || gameState === "QUIZ_PLAYING" || gameState === "QUIZ_FEEDBACK") ? currentTheme.bg : "bg-[#efbeb1]"} ${gameState === "HOME" ? "hidden md:flex" : "flex h-full"}`}>
+            <div className={`flex-1 relative z-10 flex flex-col items-center justify-center p-4 pb-12 md:p-4 transition-colors duration-500 ${(gameState === "PLAYING" || gameState === "RUSH_PLAYING" || gameState === "QUIZ_PLAYING" || gameState === "QUIZ_FEEDBACK" || gameState === "UNIVERSITY_PLAYING") ? currentTheme.bg : "bg-[#efbeb1]"} ${gameState === "HOME" ? "hidden md:flex" : "flex h-full"}`}>
                 
+                {/* University Playing Layout - UPDATED: 3D Card Stack */}
+                {gameState === "UNIVERSITY_PLAYING" && selectedRecipe && (
+                     <div className="w-full h-full md:h-auto md:max-h-[90vh] md:aspect-[3/4] max-w-xl bg-white/90 backdrop-blur-xl rounded-win shadow-fluent flex flex-col overflow-hidden animate-slide-up relative border border-white">
+                        {/* Header */}
+                        <div className={`p-6 border-b ${currentTheme.border} bg-white/50 flex flex-col items-center justify-center shrink-0 z-20`}>
+                             <span className="text-2xl font-bold uppercase tracking-tight text-brand-dark">{selectedRecipe.name}</span>
+                             <div className="w-full bg-gray-200 h-1.5 mt-4 rounded-full overflow-hidden">
+                                <div className="bg-brand-blue h-full transition-all duration-500" style={{ width: `${((uniCurrentStep + 1) / uniSteps.length) * 100}%` }}></div>
+                             </div>
+                             <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">
+                                {t('uni_step_progress', {current: uniCurrentStep + 1, total: uniSteps.length})}
+                             </div>
+                        </div>
+
+                        {/* Interactive Area - Stacked Cards */}
+                        <div className="flex-1 relative w-full flex justify-center items-center overflow-hidden">
+                            <div className="relative w-64 h-80">
+                                {uniSteps.map((step, index) => {
+                                    // Only render a few cards around the current one for performance
+                                    if (index > uniCurrentStep) return null; // Future cards
+                                    const offset = uniCurrentStep - index;
+                                    if (offset > 4) return null; // Too old, hide them
+
+                                    const isCurrent = offset === 0;
+
+                                    // Dynamic styles for the 3D stack effect
+                                    const style = {
+                                        transform: `translateY(${offset * 12}px) scale(${1 - offset * 0.05})`,
+                                        zIndex: 50 - offset,
+                                        opacity: Math.max(0, 1 - offset * 0.2),
+                                        filter: isCurrent ? 'none' : 'grayscale(100%)',
+                                    };
+
+                                    return (
+                                        <div 
+                                            key={index}
+                                            className="absolute top-0 left-0 w-full h-full transition-all duration-500 ease-out"
+                                            style={style}
+                                        >
+                                            <div className={`
+                                                w-full h-full p-6 rounded-win shadow-xl border 
+                                                flex flex-col items-center justify-center text-center
+                                                bg-white
+                                                ${isCurrent ? 'border-brand-blue ring-4 ring-brand-blue/10' : 'border-gray-300'}
+                                            `}>
+                                                <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">{step.phase}</div>
+                                                <div className={`text-2xl font-bold leading-tight ${isCurrent ? 'text-brand-dark scale-110' : 'text-gray-400'}`}>
+                                                    {step.item}
+                                                </div>
+                                                {step.count > 1 && (
+                                                    <div className={`text-4xl font-black mt-2 ${isCurrent ? 'text-brand-blue' : 'text-gray-300'}`}>
+                                                        {step.count}X
+                                                    </div>
+                                                )}
+                                                {isCurrent && <div className="mt-6 text-brand-blue animate-bounce"><IconCheck size={32} /></div>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="p-6 bg-white/80 border-t border-gray-100 flex items-center justify-between gap-4 shrink-0 z-20">
+                             <button onClick={resetToHome} className="p-3 text-gray-400 hover:text-brand-pink transition-colors"><IconHome size={24}/></button>
+                             <div className="flex items-center gap-4 flex-1 justify-end">
+                                <button 
+                                    onClick={handleUniPrev} 
+                                    disabled={uniCurrentStep === 0}
+                                    className="p-4 rounded-win bg-gray-100 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-200 transition-all font-bold shadow-sm"
+                                >
+                                    <IconArrowLeft size={24} />
+                                </button>
+                                <button 
+                                    onClick={handleUniNext}
+                                    className={`px-8 py-4 rounded-win bg-brand-blue text-white font-bold shadow-md hover:bg-blue-600 transition-all flex items-center gap-2 transform active:scale-95 ${uniCurrentStep === uniSteps.length - 1 ? 'bg-green-500 hover:bg-green-600' : ''}`}
+                                >
+                                    {uniCurrentStep === uniSteps.length - 1 ? <span>{t('btn_continue')}</span> : <IconArrowRight size={24} />}
+                                </button>
+                             </div>
+                        </div>
+                     </div>
+                )}
+
+                {/* University Success Screen */}
+                {gameState === "UNIVERSITY_SUCCESS" && (
+                    <div className="text-center p-12 bg-white rounded-win shadow-fluent animate-slide-up mx-4 max-w-md w-full border-t-8 border-purple-500">
+                        <div className="text-6xl mb-6 animate-bounce">🎓</div>
+                        <h2 className="text-3xl font-bold text-purple-900 mb-2">{t('res_uni_success_title')}</h2>
+                        <p className="text-gray-600 mb-8">{t('res_uni_success_msg')}</p>
+                        <button onClick={() => setGameState("UNIVERSITY_SELECT")} className="w-full bg-purple-600 text-white px-6 py-3 rounded-win font-semibold hover:bg-purple-700 transition-colors shadow-lg flex justify-center items-center mb-3">{t('btn_continue')}</button>
+                        <button onClick={resetToHome} className="w-full bg-gray-100 text-gray-600 px-6 py-3 rounded-win font-semibold hover:bg-gray-200 transition-colors flex justify-center items-center">{t('btn_menu')}</button>
+                    </div>
+                )}
+
                 {/* Quiz Mode Layout */}
                 {gameState === "QUIZ_PLAYING" && currentQuizQuestion && (
                     <div className="w-full max-w-2xl bg-white rounded-win shadow-fluent flex flex-col overflow-hidden animate-slide-up relative">
